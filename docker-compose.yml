@@ -8,5 +8,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      HOST: 0.0.0.0
     ports:
-      - "${PORT:-32874}:${PORT:-32874}"
+      - "0.0.0.0:${PORT:-32874}:${PORT:-32874}"

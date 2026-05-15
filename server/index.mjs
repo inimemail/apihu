@@ -14,6 +14,7 @@ dotenv.config({ path: path.join(projectRoot, '.env') })
 
 const isProduction = process.argv.includes('--production') || process.env.NODE_ENV === 'production'
 const port = Number(process.env.PORT || process.env.APP_PORT || 32874)
+const host = process.env.HOST || '0.0.0.0'
 const vitePort = Number(process.env.VITE_INTERNAL_PORT || 5175)
 const sub2apiBaseURL = normalizeBaseURL(process.env.SUB2API_BASE_URL || 'https://apihu.com/api/v1')
 const publicOrigin = (process.env.PUBLIC_ORIGIN || `http://127.0.0.1:${port}`).replace(/\/+$/, '')
@@ -238,8 +239,8 @@ if (isProduction) {
   app.use(vite.middlewares)
 }
 
-app.listen(port, () => {
-  console.log(`[api-dz] http://127.0.0.1:${port}`)
+app.listen(port, host, () => {
+  console.log(`[api-dz] http://${host}:${port}`)
   console.log(`[api-dz] sub2api ${sub2apiBaseURL}`)
 })
 
