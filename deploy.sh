@@ -202,6 +202,14 @@ set_env_value() {
   mv "$tmp" "$ENV_FILE"
 }
 
+unset_env_value() {
+  local key="$1"
+  local tmp
+  tmp="$(mktemp)"
+  awk -v key="$key" '$0 !~ "^[[:space:]]*" key "=" { print }' "$ENV_FILE" > "$tmp"
+  mv "$tmp" "$ENV_FILE"
+}
+
 service_running() {
   docker ps --format '{{.Names}}' 2>/dev/null | grep -Fxq "$CONTAINER_NAME"
 }
@@ -238,15 +246,23 @@ write_admin_password_secret() {
   chmod 600 "${STATE_DIR}/admin-password" 2>/dev/null || true
 }
 
+read_admin_password_secret() {
+  if [[ -s "${STATE_DIR}/admin-password" ]]; then
+    cat "${STATE_DIR}/admin-password"
+  fi
+}
+
 ensure_admin_password_secret() {
   local password
   if [[ -s "${STATE_DIR}/admin-password" ]]; then
+    unset_env_value SUB2API_ADMIN_PASSWORD
     return
   fi
 
   password="$(read_env_value SUB2API_ADMIN_PASSWORD)"
   if [[ -n "$password" ]]; then
     write_admin_password_secret "$password"
+    unset_env_value SUB2API_ADMIN_PASSWORD
   fi
 }
 
@@ -337,7 +353,8 @@ deploy_service() {
   current_port="$(read_env_value PORT)"
   current_port="${current_port:-$DEFAULT_PORT}"
   current_email="$(read_env_value SUB2API_ADMIN_EMAIL)"
-  current_password="$(read_env_value SUB2API_ADMIN_PASSWORD)"
+  current_password="$(read_admin_password_secret)"
+  current_password="${current_password:-$(read_env_value SUB2API_ADMIN_PASSWORD)}"
   public_origin="$(read_env_value PUBLIC_ORIGIN)"
 
   echo ""
@@ -366,7 +383,7 @@ deploy_service() {
   set_env_value PORT "$port"
   set_env_value PUBLIC_ORIGIN "$public_origin"
   set_env_value SUB2API_ADMIN_EMAIL "$email"
-  set_env_value SUB2API_ADMIN_PASSWORD "$password"
+  unset_env_value SUB2API_ADMIN_PASSWORD
   write_admin_password_secret "$password"
 
   info "构建 Docker 镜像..."

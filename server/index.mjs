@@ -66,16 +66,23 @@ app.get('/api/checkout/health', (_req, res) => {
 app.get('/api/checkout/catalog', async (_req, res) => {
   try {
     requireAdminConfig()
-    const [checkoutInfo, adminPlans, adminGroups] = await Promise.all([
-      sub2api('/payment/checkout-info', { method: 'GET' }).catch(() => null),
+    const adminToken = await getAdminToken()
+    const [checkoutInfo, adminPlans, adminGroups, adminSettings] = await Promise.all([
+      sub2api('/payment/checkout-info', { method: 'GET', token: adminToken }).catch(() => null),
       withAdmin((token) => sub2api('/admin/payment/plans', { method: 'GET', token })),
       syncGroupSubscriptions
         ? withAdmin((token) => sub2api('/admin/groups/all', { method: 'GET', token })).catch(() => [])
         : Promise.resolve([]),
+      sub2api('/admin/settings', { method: 'GET', token: adminToken }).catch(() => null),
     ])
 
     const paymentPlans = normalizePlans(checkoutInfo?.plans?.length ? checkoutInfo.plans : adminPlans)
     const plans = mergePlans(paymentPlans, normalizeSubscriptionGroups(adminGroups, adminPlans))
+    const balanceMultiplier = firstPositiveNumber(
+      checkoutInfo?.balance_recharge_multiplier,
+      adminSettings?.payment_balance_recharge_multiplier,
+      1,
+    )
     res.json(ok({
       balance: {
         id: 'balance',
@@ -86,7 +93,7 @@ app.get('/api/checkout/catalog', async (_req, res) => {
         min_amount: checkoutInfo?.global_min || 1,
         max_amount: checkoutInfo?.global_max || 0,
         default_amount: Number(process.env.CHECKOUT_DEFAULT_BALANCE_AMOUNT || 20),
-        multiplier: checkoutInfo?.balance_recharge_multiplier || 1,
+        multiplier: balanceMultiplier,
         disabled: Boolean(checkoutInfo?.balance_disabled),
         features: [
           ['适用分类', 'OpenAI / Claude'],
@@ -306,6 +313,14 @@ function normalizeOrigin(value) {
 
 function ok(data) {
   return { code: 0, message: 'ok', data }
+}
+
+function firstPositiveNumber(...values) {
+  for (const value of values) {
+    const number = Number(value)
+    if (Number.isFinite(number) && number > 0) return number
+  }
+  return 1
 }
 
 function badRequest(message, reason = 'BAD_REQUEST', metadata = undefined) {
