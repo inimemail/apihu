@@ -3,7 +3,13 @@ set -Eeuo pipefail
 
 APP_NAME="api-dz"
 DEFAULT_PORT="32874"
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_INSTALL_PATH="/opt/api-dz"
+SOURCE_REPO_URL="${SOURCE_REPO_URL:-https://github.com/inimemail/apihu.git}"
+SOURCE_REPO_BRANCH="${SOURCE_REPO_BRANCH:-main}"
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" >/dev/null 2>&1 && pwd || true)"
+PROJECT_ROOT=""
+REMOTE_INSTALL="0"
 ENV_FILE="${PROJECT_ROOT}/.env"
 STATE_DIR="${PROJECT_ROOT}/.deploy"
 PID_FILE="${STATE_DIR}/app.pid"
@@ -17,6 +23,72 @@ die() { err "$*"; exit 1; }
 
 require_cmd() {
   command -v "$1" >/dev/null 2>&1 || die "缺少命令: $1"
+}
+
+is_project_root() {
+  [[ -n "${1:-}" && -f "$1/package.json" && -f "$1/server/index.mjs" ]]
+}
+
+resolve_project_root() {
+  if is_project_root "$SCRIPT_DIR"; then
+    PROJECT_ROOT="$SCRIPT_DIR"
+    REMOTE_INSTALL="0"
+    return
+  fi
+
+  if is_project_root "$PWD"; then
+    PROJECT_ROOT="$PWD"
+    REMOTE_INSTALL="0"
+    return
+  fi
+
+  PROJECT_ROOT="${INSTALL_PATH:-$DEFAULT_INSTALL_PATH}"
+  REMOTE_INSTALL="1"
+}
+
+refresh_paths() {
+  ENV_FILE="${PROJECT_ROOT}/.env"
+  STATE_DIR="${PROJECT_ROOT}/.deploy"
+  PID_FILE="${STATE_DIR}/app.pid"
+  PORT_FILE="${STATE_DIR}/app.port"
+  LOG_FILE="${STATE_DIR}/app.log"
+}
+
+prepare_project_source() {
+  if [[ "$REMOTE_INSTALL" != "1" ]] && is_project_root "$PROJECT_ROOT"; then
+    return
+  fi
+
+  require_cmd git
+  mkdir -p "$(dirname "$PROJECT_ROOT")"
+
+  if [[ -d "$PROJECT_ROOT/.git" ]]; then
+    info "更新源码: ${PROJECT_ROOT}"
+    git -C "$PROJECT_ROOT" fetch --depth 1 origin "$SOURCE_REPO_BRANCH"
+    git -C "$PROJECT_ROOT" checkout -f FETCH_HEAD
+    return
+  fi
+
+  if [[ -e "$PROJECT_ROOT" && -n "$(ls -A "$PROJECT_ROOT" 2>/dev/null || true)" ]]; then
+    die "安装目录已存在且不是 ${APP_NAME} 项目: ${PROJECT_ROOT}"
+  fi
+
+  info "克隆源码到 ${PROJECT_ROOT}"
+  git clone --depth 1 --branch "$SOURCE_REPO_BRANCH" "$SOURCE_REPO_URL" "$PROJECT_ROOT"
+}
+
+ensure_env_file() {
+  if [[ -f "$ENV_FILE" ]]; then
+    return
+  fi
+
+  if [[ ! -f "${PROJECT_ROOT}/.env.example" ]]; then
+    die "未找到 .env，也未找到 .env.example。"
+  fi
+
+  cp "${PROJECT_ROOT}/.env.example" "$ENV_FILE"
+  chmod 600 "$ENV_FILE" 2>/dev/null || true
+  info "已从 .env.example 创建 .env"
 }
 
 ensure_runtime_dir() {
@@ -303,6 +375,10 @@ deploy_service() {
 
 upgrade_service() {
   ensure_runtime_dir
+  prepare_project_source
+  refresh_paths
+  ensure_env_file
+  ensure_runtime_dir
   require_cmd npm
   require_cmd node
   require_cmd nohup
@@ -341,6 +417,9 @@ uninstall_service() {
 
   stop_service || true
   rm -rf "$STATE_DIR"
+  if [[ "$PROJECT_ROOT" == "$DEFAULT_INSTALL_PATH" || -n "${INSTALL_PATH:-}" ]]; then
+    rm -rf "$PROJECT_ROOT"
+  fi
   info "已清理部署状态。"
 }
 
@@ -380,10 +459,13 @@ main_menu() {
   esac
 }
 
+resolve_project_root
+refresh_paths
+prepare_project_source
+refresh_paths
+ensure_env_file
 cd "$PROJECT_ROOT"
 ensure_runtime_dir
-
-[[ -f "$ENV_FILE" ]] || die "未找到 .env 文件。"
 
 while true; do
   main_menu
