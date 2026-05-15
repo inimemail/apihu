@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AhuAPI 购买</title>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+  <!-- 客服 -->
+  <script>
+  window.chatwootSettings = {"position":"right","type":"expanded_bubble","launcherTitle":""};
+  (function(d,t) {
+    var BASE_URL="https://im.7777788888.top";
+    var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+    g.src=BASE_URL+"/packs/js/sdk.js";
+    g.async = true;
+    s.parentNode.insertBefore(g,s);
+    g.onload=function(){
+      window.chatwootSDK.run({
+        websiteToken: 'osiwLM8u8NmFUSdUT8mvTBMj',
+        baseUrl: BASE_URL
+      })
+    }
+  })(document,"script");
+</script>
+
+</html>
