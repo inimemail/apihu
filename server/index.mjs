@@ -32,20 +32,32 @@ const defaultGroupPlanPrices = new Map([
   ['6', 139.99],
 ])
 
-function readSecretValue(name) {
-  const filePath = process.env[`${name}_FILE`]
-  if (filePath) {
+function readSecretValue(name, fallbackFiles = []) {
+  const fileCandidates = [
+    process.env[`${name}_FILE`],
+    ...fallbackFiles,
+  ].filter(Boolean)
+
+  for (const filePath of fileCandidates) {
     try {
-      return fs.readFileSync(filePath, 'utf8').trim()
+      const value = fs.readFileSync(filePath, 'utf8').trim()
+      if (value) return value
     } catch (error) {
-      console.warn(`[api-dz] failed to read ${name}_FILE: ${error.message}`)
+      if (filePath === process.env[`${name}_FILE`]) {
+        console.warn(`[api-dz] failed to read ${name}_FILE (${filePath}): ${error.message}`)
+      }
     }
   }
+
   return process.env[name] || ''
 }
 
 const adminEmail = process.env.SUB2API_ADMIN_EMAIL || ''
-const adminPassword = readSecretValue('SUB2API_ADMIN_PASSWORD')
+const adminPassword = readSecretValue('SUB2API_ADMIN_PASSWORD', [
+  '/app/.secrets/admin-password',
+  '/run/secrets/sub2api_admin_password',
+  path.join(projectRoot, '.deploy/admin-password'),
+])
 
 const app = express()
 const checkoutStore = new Map()
@@ -261,6 +273,7 @@ if (isProduction) {
 app.listen(port, host, () => {
   console.log(`[api-dz] http://${host}:${port}`)
   console.log(`[api-dz] sub2api ${sub2apiBaseURL}`)
+  console.log(`[api-dz] admin email: ${adminEmail ? 'set' : 'missing'}, password: ${adminPassword ? 'set' : 'missing'}, password file: ${process.env.SUB2API_ADMIN_PASSWORD_FILE || 'unset'}`)
 })
 
 function normalizeBaseURL(value) {

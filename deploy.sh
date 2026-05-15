@@ -295,6 +295,17 @@ ensure_admin_config_interactive() {
   write_admin_password_secret "$password"
 }
 
+verify_admin_config_files() {
+  local email
+  email="$(read_env_value SUB2API_ADMIN_EMAIL)"
+  if [[ -z "$email" ]]; then
+    die "后台账号没有写入 .env，请重新执行一键部署。"
+  fi
+  if [[ ! -s "${STATE_DIR}/admin-password" ]]; then
+    die "后台密码文件不存在或为空: ${STATE_DIR}/admin-password"
+  fi
+}
+
 prompt_admin_config() {
   local email password
   email="$(read_env_value SUB2API_ADMIN_EMAIL)"
@@ -377,9 +388,10 @@ start_service() {
   ensure_runtime_dir
   ensure_admin_password_secret
   ensure_admin_config_interactive
+  verify_admin_config_files
 
   info "启动 Docker 服务..."
-  (cd "$PROJECT_ROOT" && $(docker_compose_cmd) up -d)
+  (cd "$PROJECT_ROOT" && $(docker_compose_cmd) up -d --force-recreate --remove-orphans)
 
   sleep 2
   if ! service_running; then
@@ -387,6 +399,7 @@ start_service() {
     (cd "$PROJECT_ROOT" && $(docker_compose_cmd) logs --tail=80 "$SERVICE_NAME") || true
     return 1
   fi
+  (cd "$PROJECT_ROOT" && $(docker_compose_cmd) logs --tail=40 "$SERVICE_NAME" | grep -F "[api-dz] admin email:" || true)
 }
 
 deploy_service() {
