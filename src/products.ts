@@ -125,7 +125,7 @@ function normalizeProductPlatform(platform: string): Product['platform'] {
 
 function resolveDisplayPrice(plan: { group_id?: number; daily_limit_usd?: number | null; price?: number }): number {
   const byGroup = new Map([
-    [2, 1],
+    [2, 6.99],
     [3, 24.99],
     [4, 69.99],
     [5, 99.99],
@@ -135,7 +135,7 @@ function resolveDisplayPrice(plan: { group_id?: number; daily_limit_usd?: number
   if (groupPrice) return groupPrice
 
   const dailyLimit = Number(plan.daily_limit_usd || 0)
-  if (dailyLimit === 20) return 1
+  if (dailyLimit === 20) return 6.99
   if (dailyLimit === 25) return 24.99
   if (dailyLimit === 30) return 69.99
   if (dailyLimit === 50) return 99.99

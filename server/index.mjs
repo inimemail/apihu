@@ -25,7 +25,7 @@ const groupPlanPriceMultiplier = Number(process.env.CHECKOUT_GROUP_PLAN_PRICE_MU
 const groupPlanPriceMin = Number(process.env.CHECKOUT_GROUP_PLAN_PRICE_MIN || 1)
 const groupPlanPriceOverrides = parsePriceOverrides(process.env.CHECKOUT_GROUP_PLAN_PRICE_OVERRIDES || '')
 const defaultGroupPlanPrices = new Map([
-  ['2', 1],
+  ['2', 6.99],
   ['3', 24.99],
   ['4', 69.99],
   ['5', 99.99],
