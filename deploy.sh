@@ -6,14 +6,14 @@ DEFAULT_PORT="32874"
 DEFAULT_INSTALL_PATH="/opt/api-dz"
 SOURCE_REPO_URL="${SOURCE_REPO_URL:-https://github.com/inimemail/apihu.git}"
 SOURCE_REPO_BRANCH="${SOURCE_REPO_BRANCH:-main}"
+SERVICE_NAME="api-dz"
+CONTAINER_NAME="api-dz"
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" >/dev/null 2>&1 && pwd || true)"
 PROJECT_ROOT=""
 REMOTE_INSTALL="0"
 ENV_FILE="${PROJECT_ROOT}/.env"
 STATE_DIR="${PROJECT_ROOT}/.deploy"
-PID_FILE="${STATE_DIR}/app.pid"
-PORT_FILE="${STATE_DIR}/app.port"
 LOG_FILE="${STATE_DIR}/app.log"
 
 info() { printf '\033[32m[INFO]\033[0m %s\n' "$*"; }
@@ -49,9 +49,21 @@ resolve_project_root() {
 refresh_paths() {
   ENV_FILE="${PROJECT_ROOT}/.env"
   STATE_DIR="${PROJECT_ROOT}/.deploy"
-  PID_FILE="${STATE_DIR}/app.pid"
-  PORT_FILE="${STATE_DIR}/app.port"
   LOG_FILE="${STATE_DIR}/app.log"
+}
+
+docker_compose_cmd() {
+  if command -v docker-compose >/dev/null 2>&1; then
+    echo "docker-compose"
+    return
+  fi
+
+  if docker compose version >/dev/null 2>&1; then
+    echo "docker compose"
+    return
+  fi
+
+  die "未检测到 Docker Compose，请先安装 docker compose 或 docker-compose。"
 }
 
 prepare_project_source() {
@@ -67,6 +79,10 @@ prepare_project_source() {
     git -C "$PROJECT_ROOT" fetch --depth 1 origin "$SOURCE_REPO_BRANCH"
     git -C "$PROJECT_ROOT" checkout -f FETCH_HEAD
     return
+  fi
+
+  if [[ -e "$PROJECT_ROOT" ]] && directory_only_has_runtime_state "$PROJECT_ROOT"; then
+    rm -rf "$PROJECT_ROOT"
   fi
 
   if [[ -e "$PROJECT_ROOT" && -n "$(ls -A "$PROJECT_ROOT" 2>/dev/null || true)" ]]; then
@@ -94,6 +110,12 @@ ensure_env_file() {
 ensure_runtime_dir() {
   mkdir -p "$STATE_DIR"
   touch "$LOG_FILE"
+}
+
+directory_only_has_runtime_state() {
+  local dir="$1"
+  [[ -d "${dir}/.deploy" ]] || return 1
+  [[ -z "$(find "$dir" -mindepth 1 -maxdepth 1 ! -name .deploy -print -quit 2>/dev/null)" ]]
 }
 
 trim() {
@@ -180,22 +202,8 @@ set_env_value() {
   mv "$tmp" "$ENV_FILE"
 }
 
-service_pid() {
-  [[ -f "$PID_FILE" ]] && trim "$(cat "$PID_FILE" 2>/dev/null || true)"
-}
-
 service_running() {
-  local pid
-  pid="$(service_pid || true)"
-  [[ -n "$pid" ]] && kill -0 "$pid" >/dev/null 2>&1
-}
-
-cleanup_stale_state() {
-  if ! service_running; then
-    rm -f "$PID_FILE" "$PORT_FILE"
-    return 1
-  fi
-  return 0
+  docker ps --format '{{.Names}}' 2>/dev/null | grep -Fxq "$CONTAINER_NAME"
 }
 
 get_local_ip() {
@@ -226,8 +234,7 @@ prompt_secret() {
 }
 
 show_status() {
-  local pid port
-  pid="$(service_pid || true)"
+  local port
   port="$(read_env_value PORT)"
   port="${port:-$DEFAULT_PORT}"
   echo ""
@@ -236,7 +243,7 @@ show_status() {
   echo "--------------------------------------------------"
   if service_running; then
     echo -e "状态: \033[32m运行中\033[0m"
-    echo -e "PID: \033[36m${pid}\033[0m"
+    echo -e "容器: \033[36m${CONTAINER_NAME}\033[0m"
   else
     echo -e "状态: \033[33m未运行\033[0m"
   fi
@@ -258,61 +265,41 @@ show_access() {
   echo "--------------------------------------------------"
   echo -e "本地访问: \033[36mhttp://$(get_local_ip):${port}\033[0m"
   echo -e "公网地址: \033[36m${public_origin}\033[0m"
-  echo -e "进程 PID: \033[36m$(service_pid || true)\033[0m"
-  echo -e "日志文件: \033[33m${LOG_FILE}\033[0m"
+  echo -e "容器名称: \033[36m${CONTAINER_NAME}\033[0m"
+  echo -e "查看日志: \033[33mbash deploy.sh -> 6\033[0m"
   echo "=================================================="
   echo ""
 }
 
 stop_service() {
-  if ! service_running; then
-    cleanup_stale_state || true
-    warn "服务未运行。"
+  if [[ ! -f "${PROJECT_ROOT}/docker-compose.yml" ]]; then
+    warn "未找到 docker-compose.yml，服务可能尚未部署。"
     return 0
   fi
 
-  local pid
-  pid="$(service_pid)"
-  kill "$pid" >/dev/null 2>&1 || true
-
-  for _ in $(seq 1 20); do
-    if ! kill -0 "$pid" >/dev/null 2>&1; then
-      rm -f "$PID_FILE" "$PORT_FILE"
-      info "服务已停止。"
-      return 0
-    fi
-    sleep 1
-  done
-
-  kill -9 "$pid" >/dev/null 2>&1 || true
-  rm -f "$PID_FILE" "$PORT_FILE"
-  info "服务已强制停止。"
+  (cd "$PROJECT_ROOT" && $(docker_compose_cmd) stop "$SERVICE_NAME" >/dev/null 2>&1) || true
+  info "服务已停止。"
 }
 
 start_service() {
   local port
+  if [[ ! -f "${PROJECT_ROOT}/docker-compose.yml" ]]; then
+    warn "未找到 docker-compose.yml，服务可能尚未部署。"
+    return 0
+  fi
+
   port="$(read_env_value PORT)"
   port="${port:-$DEFAULT_PORT}"
 
-  if service_running; then
-    warn "检测到已有进程，先停止旧服务。"
-    stop_service
-  fi
-
   ensure_runtime_dir
 
-  info "启动生产服务..."
-  (
-    cd "$PROJECT_ROOT"
-    nohup node server/index.mjs --production >> "$LOG_FILE" 2>&1 &
-    echo $! > "$PID_FILE"
-    echo "$port" > "$PORT_FILE"
-  )
+  info "启动 Docker 服务..."
+  (cd "$PROJECT_ROOT" && $(docker_compose_cmd) up -d)
 
   sleep 2
   if ! service_running; then
-    err "服务启动失败，查看日志：$LOG_FILE"
-    tail -n 50 "$LOG_FILE" || true
+    err "服务启动失败，最近日志如下："
+    (cd "$PROJECT_ROOT" && $(docker_compose_cmd) logs --tail=80 "$SERVICE_NAME") || true
     return 1
   fi
 }
@@ -320,14 +307,14 @@ start_service() {
 deploy_service() {
   local current_port current_email current_password port email password public_origin
 
+  prepare_project_source
+  refresh_paths
+  ensure_env_file
   ensure_runtime_dir
-  require_cmd npm
-  require_cmd node
+  require_cmd docker
   require_cmd awk
   require_cmd grep
   require_cmd tail
-  require_cmd nohup
-  require_cmd kill
 
   current_port="$(read_env_value PORT)"
   current_port="${current_port:-$DEFAULT_PORT}"
@@ -363,32 +350,21 @@ deploy_service() {
   set_env_value SUB2API_ADMIN_EMAIL "$email"
   set_env_value SUB2API_ADMIN_PASSWORD "$password"
 
-  info "安装依赖..."
-  npm install
-
-  info "构建前端..."
-  npm run build
-
+  info "构建 Docker 镜像..."
+  (cd "$PROJECT_ROOT" && $(docker_compose_cmd) build)
   start_service
   show_access
 }
 
 upgrade_service() {
-  ensure_runtime_dir
   prepare_project_source
   refresh_paths
   ensure_env_file
   ensure_runtime_dir
-  require_cmd npm
-  require_cmd node
-  require_cmd nohup
-  require_cmd kill
+  require_cmd docker
 
   info "升级服务..."
-  if service_running; then
-    stop_service
-  fi
-  npm run build
+  (cd "$PROJECT_ROOT" && $(docker_compose_cmd) build)
   start_service
   show_access
 }
@@ -400,12 +376,11 @@ restart_service() {
 }
 
 view_logs() {
-  ensure_runtime_dir
-  if [[ ! -f "$LOG_FILE" ]]; then
-    warn "还没有日志。"
+  if [[ ! -f "${PROJECT_ROOT}/docker-compose.yml" ]]; then
+    warn "未找到 docker-compose.yml，服务可能尚未部署。"
     return 0
   fi
-  tail -n 120 "$LOG_FILE"
+  (cd "$PROJECT_ROOT" && $(docker_compose_cmd) logs --tail=160 "$SERVICE_NAME")
 }
 
 uninstall_service() {
@@ -416,6 +391,9 @@ uninstall_service() {
   fi
 
   stop_service || true
+  if [[ -f "${PROJECT_ROOT}/docker-compose.yml" ]]; then
+    (cd "$PROJECT_ROOT" && $(docker_compose_cmd) down --remove-orphans) || true
+  fi
   rm -rf "$STATE_DIR"
   if [[ "$PROJECT_ROOT" == "$DEFAULT_INSTALL_PATH" || -n "${INSTALL_PATH:-}" ]]; then
     rm -rf "$PROJECT_ROOT"
@@ -461,11 +439,6 @@ main_menu() {
 
 resolve_project_root
 refresh_paths
-prepare_project_source
-refresh_paths
-ensure_env_file
-cd "$PROJECT_ROOT"
-ensure_runtime_dir
 
 while true; do
   main_menu

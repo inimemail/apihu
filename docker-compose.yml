@@ -1,0 +1,12 @@
+services:
+  api-dz:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: api-dz:latest
+    container_name: api-dz
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "${PORT:-32874}:${PORT:-32874}"
