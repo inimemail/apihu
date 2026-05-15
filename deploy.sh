@@ -277,17 +277,38 @@ ensure_admin_config_interactive() {
   password="${password:-$(read_env_value SUB2API_ADMIN_PASSWORD)}"
 
   if [[ -z "$email" ]]; then
-    email="$(prompt_text 'SUB2API_ADMIN_EMAIL' '')"
+    email="$(prompt_text '后台账号' '')"
   fi
   if [[ -z "$password" ]]; then
-    password="$(prompt_secret 'SUB2API_ADMIN_PASSWORD' '')"
+    password="$(prompt_secret '后台密码' '')"
   fi
 
   if [[ -z "$email" ]]; then
-    die "管理员邮箱不能为空。"
+    die "后台账号不能为空。"
   fi
   if [[ -z "$password" ]]; then
-    die "管理员密码不能为空。"
+    die "后台密码不能为空。"
+  fi
+
+  set_env_value SUB2API_ADMIN_EMAIL "$email"
+  unset_env_value SUB2API_ADMIN_PASSWORD
+  write_admin_password_secret "$password"
+}
+
+prompt_admin_config() {
+  local email password
+  email="$(read_env_value SUB2API_ADMIN_EMAIL)"
+  password="$(read_admin_password_secret)"
+  password="${password:-$(read_env_value SUB2API_ADMIN_PASSWORD)}"
+
+  email="$(prompt_text '后台账号' "$email")"
+  password="$(prompt_secret '后台密码' "$password")"
+
+  if [[ -z "$email" ]]; then
+    die "后台账号不能为空。"
+  fi
+  if [[ -z "$password" ]]; then
+    die "后台密码不能为空。"
   fi
 
   set_env_value SUB2API_ADMIN_EMAIL "$email"
@@ -390,20 +411,20 @@ deploy_service() {
   echo ""
   echo "一键部署"
   echo "--------------------------------------------------"
-  port="$(prompt_text 'PORT' "$current_port")"
+  port="$(prompt_text '端口' "$current_port")"
   while ! is_valid_port "$port"; do
     warn "端口不合法，范围 1-65535。"
-    port="$(prompt_text 'PORT' "$current_port")"
+    port="$(prompt_text '端口' "$current_port")"
   done
 
-  email="$(prompt_text 'SUB2API_ADMIN_EMAIL' "$current_email")"
-  password="$(prompt_secret 'SUB2API_ADMIN_PASSWORD' "$current_password")"
+  email="$(prompt_text '后台账号' "$current_email")"
+  password="$(prompt_secret '后台密码' "$current_password")"
 
   if [[ -z "$email" ]]; then
-    die "管理员邮箱不能为空。"
+    die "后台账号不能为空。"
   fi
   if [[ -z "$password" ]]; then
-    die "管理员密码不能为空。"
+    die "后台密码不能为空。"
   fi
 
   if [[ -z "$public_origin" || "$public_origin" == http://127.0.0.1:* || "$public_origin" == http://localhost:* ]]; then
@@ -430,6 +451,7 @@ upgrade_service() {
   require_cmd docker
 
   info "升级服务..."
+  prompt_admin_config
   (cd "$PROJECT_ROOT" && $(docker_compose_cmd) build)
   start_service
   show_access
