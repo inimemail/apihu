@@ -223,13 +223,30 @@ prompt_secret() {
   local label="$1"
   local current_value="$2"
   local answer
-  read -r -s -p "${label}${current_value:+ [回车保留当前值]}: " answer
-  printf '\n'
+  read -r -p "${label}${current_value:+ [回车保留当前值]}: " answer
   answer="$(trim "$answer")"
   if [[ -n "$answer" ]]; then
     printf '%s' "$answer"
   else
     printf '%s' "$current_value"
+  fi
+}
+
+write_admin_password_secret() {
+  mkdir -p "$STATE_DIR"
+  printf '%s' "$1" > "${STATE_DIR}/admin-password"
+  chmod 600 "${STATE_DIR}/admin-password" 2>/dev/null || true
+}
+
+ensure_admin_password_secret() {
+  local password
+  if [[ -s "${STATE_DIR}/admin-password" ]]; then
+    return
+  fi
+
+  password="$(read_env_value SUB2API_ADMIN_PASSWORD)"
+  if [[ -n "$password" ]]; then
+    write_admin_password_secret "$password"
   fi
 }
 
@@ -292,6 +309,7 @@ start_service() {
   port="${port:-$DEFAULT_PORT}"
 
   ensure_runtime_dir
+  ensure_admin_password_secret
 
   info "启动 Docker 服务..."
   (cd "$PROJECT_ROOT" && $(docker_compose_cmd) up -d)
@@ -349,6 +367,7 @@ deploy_service() {
   set_env_value PUBLIC_ORIGIN "$public_origin"
   set_env_value SUB2API_ADMIN_EMAIL "$email"
   set_env_value SUB2API_ADMIN_PASSWORD "$password"
+  write_admin_password_secret "$password"
 
   info "构建 Docker 镜像..."
   (cd "$PROJECT_ROOT" && $(docker_compose_cmd) build)

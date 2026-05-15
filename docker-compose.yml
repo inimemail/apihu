@@ -10,5 +10,12 @@ services:
       - .env
     environment:
       HOST: 0.0.0.0
+      SUB2API_ADMIN_PASSWORD_FILE: /run/secrets/sub2api_admin_password
     ports:
       - "0.0.0.0:${PORT:-32874}:${PORT:-32874}"
+    secrets:
+      - sub2api_admin_password
+
+secrets:
+  sub2api_admin_password:
+    file: ./.deploy/admin-password

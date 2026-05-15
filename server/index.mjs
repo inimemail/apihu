@@ -32,8 +32,20 @@ const defaultGroupPlanPrices = new Map([
   ['6', 139.99],
 ])
 
+function readSecretValue(name) {
+  const filePath = process.env[`${name}_FILE`]
+  if (filePath) {
+    try {
+      return fs.readFileSync(filePath, 'utf8').trim()
+    } catch (error) {
+      console.warn(`[api-dz] failed to read ${name}_FILE: ${error.message}`)
+    }
+  }
+  return process.env[name] || ''
+}
+
 const adminEmail = process.env.SUB2API_ADMIN_EMAIL || ''
-const adminPassword = process.env.SUB2API_ADMIN_PASSWORD || ''
+const adminPassword = readSecretValue('SUB2API_ADMIN_PASSWORD')
 
 const app = express()
 const checkoutStore = new Map()
