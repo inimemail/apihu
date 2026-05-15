@@ -222,7 +222,11 @@ prompt_text() {
   local label="$1"
   local default_value="$2"
   local answer
-  read -r -p "${label} [${default_value}]: " answer
+  if [[ -n "$default_value" ]]; then
+    read -r -p "${label} [${default_value}]: " answer
+  else
+    read -r -p "${label}: " answer
+  fi
   answer="$(trim "$answer")"
   printf '%s' "${answer:-$default_value}"
 }
@@ -264,6 +268,31 @@ ensure_admin_password_secret() {
     write_admin_password_secret "$password"
     unset_env_value SUB2API_ADMIN_PASSWORD
   fi
+}
+
+ensure_admin_config_interactive() {
+  local email password
+  email="$(read_env_value SUB2API_ADMIN_EMAIL)"
+  password="$(read_admin_password_secret)"
+  password="${password:-$(read_env_value SUB2API_ADMIN_PASSWORD)}"
+
+  if [[ -z "$email" ]]; then
+    email="$(prompt_text 'SUB2API_ADMIN_EMAIL' '')"
+  fi
+  if [[ -z "$password" ]]; then
+    password="$(prompt_secret 'SUB2API_ADMIN_PASSWORD' '')"
+  fi
+
+  if [[ -z "$email" ]]; then
+    die "管理员邮箱不能为空。"
+  fi
+  if [[ -z "$password" ]]; then
+    die "管理员密码不能为空。"
+  fi
+
+  set_env_value SUB2API_ADMIN_EMAIL "$email"
+  unset_env_value SUB2API_ADMIN_PASSWORD
+  write_admin_password_secret "$password"
 }
 
 show_status() {
@@ -326,6 +355,7 @@ start_service() {
 
   ensure_runtime_dir
   ensure_admin_password_secret
+  ensure_admin_config_interactive
 
   info "启动 Docker 服务..."
   (cd "$PROJECT_ROOT" && $(docker_compose_cmd) up -d)
