@@ -15,48 +15,6 @@
     </header>
 
     <main id="top" class="wrap">
-      <!-- 英雄主视觉区 -->
-      <section class="hero">
-        <div class="badge animate-enter">
-          <i class="badge-dot"></i>
-          <span>✨ AI 订阅与 API 服务平台</span>
-        </div>
-        <h1 class="title animate-enter animated-title" :aria-label="siteConfig.brandName">
-          <span v-for="(char, index) in brandLetters" :key="`${char}-${index}`" :style="{ '--i': index + 1 }">{{ char
-            }}</span>
-        </h1>
-        <p class="subtitle animate-enter">稳定、安全、即开即用的 AI API 服务平台</p>
-        <div class="hero-actions animate-enter">
-          <a class="btn btn-primary" href="#pricing">立即购买</a>
-          <a class="btn btn-secondary" href="#tutorial">查看教程</a>
-          <a class="btn btn-secondary" :href="siteConfig.dashboardUrl" target="_blank" rel="noopener">进入使用</a>
-        </div>
-      </section>
-
-      <!-- 特性区 -->
-      <section class="features">
-        <article class="card animate-enter">
-          <div class="icon-box">🛡️</div>
-          <h3>安全</h3>
-          <p>不保存对话内容，仅做请求中转；权限可控，降低使用风险。</p>
-        </article>
-        <article class="card animate-enter">
-          <div class="icon-box">⚡</div>
-          <h3>稳定</h3>
-          <p>稳定运行，监控告警及时；业务持续跑更省心。</p>
-        </article>
-        <article class="card animate-enter">
-          <div class="icon-box">🎁</div>
-          <h3>优惠</h3>
-          <p>套餐清晰、价格透明；按需购买更划算，成本可控。</p>
-        </article>
-        <article class="card animate-enter">
-          <div class="icon-box">✅</div>
-          <h3>售后</h3>
-          <p>有群答疑、专人对接与技术支持；问题有人跟到解决。</p>
-        </article>
-      </section>
-
       <!-- 套餐购买区 -->
       <section id="pricing" class="pricing">
         <div class="section-head animate-enter">
@@ -149,6 +107,48 @@
 
           </div>
         </div>
+      </section>
+
+      <!-- 英雄主视觉区 -->
+      <section class="hero">
+        <div class="badge animate-enter">
+          <i class="badge-dot"></i>
+          <span>✨ AI 订阅与 API 服务平台</span>
+        </div>
+        <h1 class="title animate-enter animated-title" :aria-label="siteConfig.brandName">
+          <span v-for="(char, index) in brandLetters" :key="`${char}-${index}`" :style="{ '--i': index + 1 }">{{ char
+            }}</span>
+        </h1>
+        <p class="subtitle animate-enter">稳定、安全、即开即用的 AI API 服务平台</p>
+        <div class="hero-actions animate-enter">
+          <a class="btn btn-primary" href="#pricing">立即购买</a>
+          <a class="btn btn-secondary" href="#tutorial">查看教程</a>
+          <a class="btn btn-secondary" :href="siteConfig.dashboardUrl" target="_blank" rel="noopener">进入使用</a>
+        </div>
+      </section>
+
+      <!-- 特性区 -->
+      <section class="features">
+        <article class="card animate-enter">
+          <div class="icon-box">🛡️</div>
+          <h3>安全</h3>
+          <p>不保存对话内容，仅做请求中转；权限可控，降低使用风险。</p>
+        </article>
+        <article class="card animate-enter">
+          <div class="icon-box">⚡</div>
+          <h3>稳定</h3>
+          <p>稳定运行，监控告警及时；业务持续跑更省心。</p>
+        </article>
+        <article class="card animate-enter">
+          <div class="icon-box">🎁</div>
+          <h3>优惠</h3>
+          <p>套餐清晰、价格透明；按需购买更划算，成本可控。</p>
+        </article>
+        <article class="card animate-enter">
+          <div class="icon-box">✅</div>
+          <h3>售后</h3>
+          <p>有群答疑、专人对接与技术支持；问题有人跟到解决。</p>
+        </article>
       </section>
 
       <!-- 教程区 -->
