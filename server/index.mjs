@@ -26,10 +26,10 @@ const groupPlanPriceMin = Number(process.env.CHECKOUT_GROUP_PLAN_PRICE_MIN || 1)
 const groupPlanPriceOverrides = parsePriceOverrides(process.env.CHECKOUT_GROUP_PLAN_PRICE_OVERRIDES || '')
 const defaultGroupPlanPrices = new Map([
   ['2', 6.99],
-  ['3', 24.99],
-  ['4', 69.99],
-  ['5', 99.99],
-  ['6', 139.99],
+  ['3', 39.99],
+  ['4', 119.99],
+  ['5', 169.99],
+  ['6', 239.99],
 ])
 
 function readSecretValue(name, fallbackFiles = []) {
