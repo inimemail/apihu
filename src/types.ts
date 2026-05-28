@@ -72,6 +72,7 @@ export interface CatalogPlanProduct {
   monthly_limit_usd?: number | null
   supported_model_scopes?: string[]
   features: Array<[string, string]>
+  tier_index?: number
   popular?: boolean
 }
 

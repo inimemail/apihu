@@ -66,12 +66,14 @@ export function catalogToProducts(catalog: CatalogResponse | null): Product[] {
   }
 
   const plans: Product[] = normalized.plans
-    .map((plan) => {
+    .slice(0, 5)
+    .map((plan, index) => {
       const validity = formatValidityDays(plan.validity_days)
       const dailyLimit = Number(plan.daily_limit_usd || 0)
       const weeklyLimit = Number(plan.weekly_limit_usd || 0)
       const monthlyLimit = Number(plan.monthly_limit_usd || 0)
-      const displayPrice = resolveDisplayPrice(plan)
+      const tierIndex = Number(plan.tier_index || index + 1)
+      const displayPrice = resolveDisplayPrice(plan, tierIndex)
 
       return {
         id: plan.group_id ? `group-${plan.group_id}` : plan.product_id,
@@ -83,7 +85,7 @@ export function catalogToProducts(catalog: CatalogResponse | null): Product[] {
         priceLabel: `¥${displayPrice.toFixed(2)} / ${validity === '30天' ? '1个月' : validity}`,
         amount: displayPrice,
         planId: plan.id,
-        popular: Number(plan.group_id || 0) === 5,
+        popular: Boolean(plan.popular),
         features: [
           ['支持平台', 'OpenAI'],
           ...(dailyLimit > 0 ? [['每日限制', `${dailyLimit.toFixed(2)} 美元`] as [string, string]] : []),
@@ -123,16 +125,10 @@ function normalizeProductPlatform(platform: string): Product['platform'] {
   return 'openai'
 }
 
-function resolveDisplayPrice(plan: { group_id?: number; daily_limit_usd?: number | null; price?: number }): number {
-  const byGroup = new Map([
-    [2, 6.99],
-    [3, 39.99],
-    [4, 119.99],
-    [5, 169.99],
-    [6, 239.99],
-  ])
-  const groupPrice = byGroup.get(Number(plan.group_id || 0))
-  if (groupPrice) return groupPrice
+function resolveDisplayPrice(plan: { daily_limit_usd?: number | null; price?: number }, tierIndex = 0): number {
+  const byTier = [6.99, 39.99, 119.99, 169.99, 239.99]
+  const tierPrice = byTier[Number(tierIndex || 0) - 1]
+  if (tierPrice) return tierPrice
 
   const dailyLimit = Number(plan.daily_limit_usd || 0)
   if (dailyLimit === 20) return 6.99

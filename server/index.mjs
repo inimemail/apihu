@@ -24,13 +24,8 @@ const syncGroupSubscriptions = process.env.CHECKOUT_SYNC_GROUP_SUBSCRIPTIONS !==
 const groupPlanPriceMultiplier = Number(process.env.CHECKOUT_GROUP_PLAN_PRICE_MULTIPLIER || 1)
 const groupPlanPriceMin = Number(process.env.CHECKOUT_GROUP_PLAN_PRICE_MIN || 1)
 const groupPlanPriceOverrides = parsePriceOverrides(process.env.CHECKOUT_GROUP_PLAN_PRICE_OVERRIDES || '')
-const defaultGroupPlanPrices = new Map([
-  ['2', 6.99],
-  ['3', 39.99],
-  ['4', 119.99],
-  ['5', 169.99],
-  ['6', 239.99],
-])
+const storefrontPlanPrices = [6.99, 39.99, 119.99, 169.99, 239.99]
+const storefrontPopularTier = Number(process.env.CHECKOUT_POPULAR_PLAN_TIER || 4)
 
 function readSecretValue(name, fallbackFiles = []) {
   const fileCandidates = [
@@ -494,9 +489,10 @@ async function getPaymentPlan(planId) {
   if (!plan) throw badRequest('后台套餐不存在或已下架。', 'PLAN_NOT_AVAILABLE')
   const group = await findGroupById(plan.group_id).catch(() => null)
   if (group && isSellableSubscriptionGroup(group)) {
+    const tierIndex = await findGroupTierIndex(group.id)
     return {
       ...plan,
-      price: resolveGroupPlanPrice(group),
+      price: resolveGroupPlanPrice(group, tierIndex),
       validity_days: resolveGroupValidityDays(group) || Number(plan.validity_days || 0),
       validity_unit: 'day',
     }
@@ -510,6 +506,14 @@ async function findGroupById(groupId) {
     const groups = await sub2api('/admin/groups/all', { method: 'GET', token })
     return (Array.isArray(groups) ? groups : []).find((item) => Number(item.id) === Number(groupId)) || null
   })
+}
+
+async function findGroupTierIndex(groupId) {
+  if (!groupId) return 0
+  return withAdmin(async (token) => {
+    const groups = await sub2api('/admin/groups/all', { method: 'GET', token })
+    return sortedSellableSubscriptionGroups(groups).findIndex((group) => Number(group.id) === Number(groupId)) + 1
+  }).catch(() => 0)
 }
 
 async function getGroupPlans(existingPlans = null) {
@@ -528,10 +532,12 @@ async function ensurePlanForGroup(groupId) {
       sub2api('/admin/groups/all', { method: 'GET', token }),
       sub2api('/admin/payment/plans', { method: 'GET', token }),
     ])
-    const group = (Array.isArray(groups) ? groups : []).find((item) => Number(item.id) === Number(groupId))
+    const sellableGroups = sortedSellableSubscriptionGroups(groups)
+    const tierIndex = sellableGroups.findIndex((item) => Number(item.id) === Number(groupId)) + 1
+    const group = sellableGroups[tierIndex - 1]
     if (!isSellableSubscriptionGroup(group)) throw badRequest('订阅分组不存在或未启用。', 'PLAN_NOT_AVAILABLE')
 
-    const price = resolveGroupPlanPrice(group)
+    const price = resolveGroupPlanPrice(group, tierIndex)
     const validityDays = resolveGroupValidityDays(group)
     const existing = findPlanForGroup(plans, group)
     if (existing) {
@@ -587,12 +593,17 @@ function normalizePlans(plans) {
         monthly_limit_usd: plan.monthly_limit_usd ?? null,
         supported_model_scopes: plan.supported_model_scopes || [],
         features: features.length ? features : buildFeaturePairs(plan),
-        popular: Number(plan.group_id || 0) === 4 || Number(plan.id || 0) === 4,
+        tier_index: Number(plan.tier_index || 0),
+        popular: Boolean(plan.popular),
       }
     })
 }
 
 function mergePlans(paymentPlans, groupPlans) {
+  if (syncGroupSubscriptions && Array.isArray(groupPlans) && groupPlans.length) {
+    return groupPlans
+  }
+
   const merged = []
   const seenGroups = new Set()
   for (const plan of groupPlans || []) {
@@ -608,12 +619,12 @@ function mergePlans(paymentPlans, groupPlans) {
 
 function normalizeSubscriptionGroups(groups, existingPlans = []) {
   const plans = Array.isArray(existingPlans) ? existingPlans : []
-  return (Array.isArray(groups) ? groups : [])
-    .filter(isSellableSubscriptionGroup)
-    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0) || Number(a.id || 0) - Number(b.id || 0))
-    .map((group) => {
+  return sortedSellableSubscriptionGroups(groups)
+    .slice(0, storefrontPlanPrices.length)
+    .map((group, index) => {
+      const tierIndex = index + 1
       const existing = findPlanForGroup(plans, group)
-      const price = resolveGroupPlanPrice(group)
+      const price = resolveGroupPlanPrice(group, tierIndex)
       const validityDays = Number(existing?.validity_days || resolveGroupValidityDays(group))
       return {
         id: Number(existing?.id || group.id),
@@ -634,9 +645,16 @@ function normalizeSubscriptionGroups(groups, existingPlans = []) {
         monthly_limit_usd: group.monthly_limit_usd ?? null,
         supported_model_scopes: group.supported_model_scopes || [],
         features: buildGroupFeaturePairs(group, validityDays),
-        popular: Number(group.id || 0) === 5,
+        tier_index: tierIndex,
+        popular: tierIndex === storefrontPopularTier,
       }
     })
+}
+
+function sortedSellableSubscriptionGroups(groups) {
+  return (Array.isArray(groups) ? groups : [])
+    .filter(isSellableSubscriptionGroup)
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0) || Number(a.id || 0) - Number(b.id || 0))
 }
 
 function isSellableSubscriptionGroup(group) {
@@ -667,11 +685,11 @@ function resolveGroupValidityDays(group) {
   return 30
 }
 
-function resolveGroupPlanPrice(group) {
+function resolveGroupPlanPrice(group, tierIndex = 0) {
   const override = groupPlanPriceOverrides.get(String(group.id))
   if (override && override > 0) return roundMoney(override)
-  const defaultPrice = defaultGroupPlanPrices.get(String(group.id))
-  if (defaultPrice && defaultPrice > 0) return roundMoney(defaultPrice)
+  const tierPrice = storefrontPlanPrices[Number(tierIndex || 0) - 1]
+  if (tierPrice && tierPrice > 0) return roundMoney(tierPrice)
   const namedPrice = extractNamedPrice(group)
   if (namedPrice > 0) return roundMoney(namedPrice)
   const limit = Number(group.monthly_limit_usd || group.weekly_limit_usd || group.daily_limit_usd || 0)
