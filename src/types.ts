@@ -76,6 +76,23 @@ export interface CatalogPlanProduct {
   popular?: boolean
 }
 
+export interface ModelPricingItem {
+  id: string
+  name: string
+  release_date?: string
+  input_price?: number | null
+  cache_read_price?: number | null
+  cache_write_price?: number | null
+  output_price?: number | null
+}
+
+export interface ModelPricingPlatform {
+  id: string
+  name: string
+  short_name?: string
+  models: ModelPricingItem[]
+}
+
 export interface Product {
   id: string
   kind: OrderType
@@ -87,6 +104,7 @@ export interface Product {
   amount?: number
   planId?: number
   popular?: boolean
+  isCustom?: boolean
   features: Array<[string, string]>
 }
 
@@ -94,6 +112,7 @@ export interface CatalogResponse {
   balance: CatalogBalanceProduct
   methods: PaymentMethod[]
   plans: CatalogPlanProduct[]
+  models?: ModelPricingPlatform[]
   help_text?: string
   help_image_url?: string
 }

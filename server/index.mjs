@@ -26,6 +26,7 @@ const groupPlanPriceMin = Number(process.env.CHECKOUT_GROUP_PLAN_PRICE_MIN || 1)
 const groupPlanPriceOverrides = parsePriceOverrides(process.env.CHECKOUT_GROUP_PLAN_PRICE_OVERRIDES || '')
 const storefrontPlanPrices = [6.99, 39.99, 119.99, 169.99, 239.99]
 const storefrontPopularTier = Number(process.env.CHECKOUT_POPULAR_PLAN_TIER || 4)
+const storefrontModelCatalog = parseModelCatalog(process.env.CHECKOUT_MODEL_CATALOG_JSON || '')
 
 function readSecretValue(name, fallbackFiles = []) {
   const fileCandidates = [
@@ -74,17 +75,11 @@ app.get('/api/checkout/catalog', async (_req, res) => {
   try {
     requireAdminConfig()
     const adminToken = await getAdminToken()
-    const [checkoutInfo, adminPlans, adminGroups, adminSettings] = await Promise.all([
+    const [checkoutInfo, adminSettings] = await Promise.all([
       sub2api('/payment/checkout-info', { method: 'GET', token: adminToken }).catch(() => null),
-      withAdmin((token) => sub2api('/admin/payment/plans', { method: 'GET', token })),
-      syncGroupSubscriptions
-        ? withAdmin((token) => sub2api('/admin/groups/all', { method: 'GET', token })).catch(() => [])
-        : Promise.resolve([]),
       sub2api('/admin/settings', { method: 'GET', token: adminToken }).catch(() => null),
     ])
 
-    const paymentPlans = normalizePlans(checkoutInfo?.plans?.length ? checkoutInfo.plans : adminPlans)
-    const plans = mergePlans(paymentPlans, normalizeSubscriptionGroups(adminGroups, adminPlans))
     const balanceMultiplier = firstPositiveNumber(
       checkoutInfo?.balance_recharge_multiplier,
       adminSettings?.payment_balance_recharge_multiplier,
@@ -96,22 +91,21 @@ app.get('/api/checkout/catalog', async (_req, res) => {
         kind: 'balance',
         title: '余额充值',
         subtitle: '灵活计费，全平台模型通用',
-        description: '充值后创建 API Key 并绑定 OpenAI 或 Claude 额度计费分类即可使用；余额长期有效，适合日常按需调用。',
+        description: '充值后创建 API Key 即可调用已开通的平台与模型；余额长期有效，适合日常按需调用。',
         min_amount: checkoutInfo?.global_min || 1,
         max_amount: checkoutInfo?.global_max || 0,
         default_amount: Number(process.env.CHECKOUT_DEFAULT_BALANCE_AMOUNT || 20),
         multiplier: balanceMultiplier,
         disabled: Boolean(checkoutInfo?.balance_disabled),
         features: [
-          ['适用分类', 'OpenAI / Claude'],
-          ['OpenAI', 'Codex / 图像'],
-          ['Claude', 'Sonnet / Opus / Haiku'],
+          ['适用平台', '全平台模型通用'],
           ['扣费方式', '按量计费'],
           ['有效期', '长期有效'],
         ],
       },
       methods: visiblePaymentMethods(checkoutInfo?.methods || {}),
-      plans,
+      plans: [],
+      ...(storefrontModelCatalog.length ? { models: storefrontModelCatalog } : {}),
       help_text: checkoutInfo?.help_text || '',
       help_image_url: checkoutInfo?.help_image_url || '',
     }))
@@ -826,6 +820,42 @@ function parsePriceOverrides(value) {
     if (key && price > 0) map.set(key.trim(), price)
   }
   return map
+}
+
+function parseModelCatalog(value) {
+  if (!value) return []
+  try {
+    const parsed = JSON.parse(value)
+    if (!Array.isArray(parsed)) return []
+    return parsed
+      .filter((platform) => platform && platform.name && Array.isArray(platform.models))
+      .map((platform) => ({
+        id: String(platform.id || platform.name).toLowerCase().replace(/\s+/g, '-'),
+        name: String(platform.name),
+        short_name: platform.short_name ? String(platform.short_name) : undefined,
+        models: platform.models
+          .filter((model) => model && (model.name || model.id))
+          .map((model) => ({
+            id: String(model.id || model.name),
+            name: String(model.name || model.id),
+            release_date: model.release_date ? String(model.release_date) : undefined,
+            input_price: finiteOrNull(model.input_price),
+            cache_read_price: finiteOrNull(model.cache_read_price),
+            cache_write_price: finiteOrNull(model.cache_write_price),
+            output_price: finiteOrNull(model.output_price),
+          })),
+      }))
+      .filter((platform) => platform.models.length)
+  } catch (error) {
+    console.warn('[api-dz] invalid CHECKOUT_MODEL_CATALOG_JSON:', error.message)
+    return []
+  }
+}
+
+function finiteOrNull(value) {
+  if (value === null || value === undefined || value === '') return null
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
 }
 
 function requireCheckout(id) {

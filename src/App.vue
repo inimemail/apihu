@@ -7,7 +7,8 @@
           <span>{{ siteConfig.brandName }}</span>
         </a>
         <nav class="nav" aria-label="页面导航">
-          <a href="#pricing">套餐</a>
+          <a href="#pricing">充值</a>
+          <a href="#models">模型价格</a>
           <a href="#tutorial">教程</a>
           <a href="#chat-panel">Chat</a>
         </nav>
@@ -15,14 +16,15 @@
     </header>
 
     <main id="top" class="wrap">
-      <!-- 套餐购买区 -->
+      <!-- 余额充值区 -->
       <section id="pricing" class="pricing">
         <div class="section-head animate-enter">
-          <h2>购买套餐</h2>
+          <h2>余额充值</h2>
+          <p>自定义充值或选择快捷金额，余额可用于已开通的全平台模型。</p>
         </div>
 
         <div v-if="catalogError" class="error-text catalog-error">{{ catalogError }}</div>
-        <div v-if="catalogLoading" class="catalog-loading">正在加载套餐...</div>
+        <div v-if="catalogLoading" class="catalog-loading">正在加载充值选项...</div>
 
         <div v-else class="pricing-grid">
           <div v-for="(row, rowIndex) in productRows" :key="rowIndex" class="pricing-row">
@@ -30,82 +32,71 @@
             <article v-for="product in row" :key="product.id" class="price-card animate-enter"
               :class="{ popular: product.popular, 'balance-card': product.kind === 'balance' }">
               <div v-if="product.popular" class="popular-badge sweep-shine">强烈推荐</div>
-              <div class="product-kind">{{ product.kind === 'balance' ? '余额计费' : 'OpenAI 订阅' }}</div>
+              <div class="product-kind">{{ product.isCustom ? '自定义充值' : '快捷充值' }}</div>
 
-              <!-- 覆盖动态内容：如果是余额卡，采用合并视效 -->
-              <template v-if="product.kind === 'balance'">
+              <template v-if="product.isCustom">
                 <h3 class="price-title">通用按量余额</h3>
-                <p class="price-sub">灵活计费，全平台模型通用</p>
+                <p class="price-sub">灵活充值，全平台模型通用</p>
                 <div class="balance-visual">
-                  <span>OpenAI</span>
-                  <span>Claude</span>
+                  <span>全平台模型</span>
+                  <span>按量计费</span>
                 </div>
-                <p class="price-num">自定义 <small>/ 按需购买</small></p>
+                <p class="price-num">自定义 <small>/ 任意金额</small></p>
               </template>
 
               <template v-else>
                 <h3 class="price-title">{{ product.title }}</h3>
                 <p class="price-sub">{{ product.subtitle }}</p>
-                <p class="price-num">
-                  {{ product.priceLabel.split(' / ')[0] }}
-                  <small v-if="product.priceLabel.includes(' / ')">/ {{ product.priceLabel.split(' / ')[1] }}</small>
-                </p>
+                <p class="price-num">{{ product.priceLabel }} <small>快捷充值</small></p>
               </template>
 
               <ul class="price-list">
                 <li v-for="[label, value] in product.features" :key="label">
-                  <!-- 如果是余额，覆盖显示支持平台 -->
-                  <span v-if="label === '支持平台' && product.kind === 'balance'">支持平台</span>
-                  <span v-else>{{ label }}</span>
-
-                  <span v-if="label === '支持平台' && product.kind === 'balance'">OpenAI / Claude</span>
-                  <span v-else>{{ value }}</span>
-                </li>
-                <li>
-                  <span>支持模型</span>
-                  <span>
-                    <!-- 余额卡固定拉起合并全集，订阅卡拉起对应的单独集 -->
-                    <button class="model-link" type="button"
-                      @click="openModelModal(product.kind === 'balance' ? 'balance' : product.platform)">
-                      查看列表
-                    </button>
-                  </span>
+                  <span>{{ label }}</span>
+                  <span>{{ value }}</span>
                 </li>
               </ul>
 
-              <!-- 核心：保留原版的 Vue 下单唤起逻辑 -->
               <button class="buy-btn" type="button" @click="startCheckout(product)">
-                {{ product.kind === 'balance' ? '立即充值' : '立即购买' }}
+                立即充值
               </button>
             </article>
 
-            <!-- 余额扩展面板 -->
-            <aside v-if="rowIndex === 0" class="balance-more-card animate-enter">
-              <div class="more-card-head">
-                <span class="cc-kicker">余额可扩展</span>
-                <h3>更多模型按需申请开通</h3>
-                <p>余额不仅能跑 OpenAI 和 Claude，其他热门模型也可以接入。部分模型需要联系客服开通对应分组后，再把 API Key 绑定到该分组。</p>
-              </div>
-              <div class="model-cloud">
-                <span>Gemini</span>
-                <span>Gork</span>
-                <span>DeepSeek</span>
-                <span>通义千问 / Qwen</span>
-                <span>Kimi</span>
-                <span>豆包 / Doubao</span>
-                <span>智谱 GLM</span>
-                <span>MiniMax</span>
-                <span>腾讯混元</span>
-                <span>文心 ERNIE</span>
-              </div>
-              <div class="more-list">
-                <div><b>默认可用</b><span>OpenAI / Claude 额度计费分组</span></div>
-                <div><b>热门扩展</b><span>Gemini、Gork、DeepSeek、通义千问、Kimi、豆包、GLM 等联系客服开启</span></div>
-                <div><b>使用方式</b><span>充值余额后创建 Key，并绑定需要的模型分组</span></div>
-              </div>
-            </aside>
-
           </div>
+        </div>
+      </section>
+
+      <section id="models" class="model-catalog-section">
+        <div class="section-head animate-enter">
+          <h2>支持的平台与模型</h2>
+          <p>按平台查看模型计费价格，价格单位均为每 1M tokens。</p>
+        </div>
+        <div class="model-platforms">
+          <article v-for="platform in modelPlatforms" :key="platform.id" class="model-platform animate-enter">
+            <div class="platform-heading">
+              <div class="platform-mark">{{ platform.short_name || platform.name.slice(0, 2) }}</div>
+              <div>
+                <h3>{{ platform.name }}</h3>
+                <p>{{ platform.models.length }} 个模型</p>
+              </div>
+            </div>
+            <div class="model-price-grid">
+              <article v-for="model in platform.models" :key="model.id" class="model-price-card">
+                <div class="model-name">{{ model.name }}</div>
+                <div class="model-prices">
+                  <div><span>输入</span><b>{{ formatModelPrice(model.input_price) }}</b></div>
+                  <div v-if="model.cache_read_price !== undefined || model.cache_write_price !== undefined">
+                    <span>{{ model.cache_write_price !== undefined ? '缓存读取' : '缓存' }}</span>
+                    <b>{{ formatModelPrice(model.cache_read_price ?? model.cache_write_price) }}</b>
+                  </div>
+                  <div v-if="model.cache_write_price !== undefined && model.cache_read_price !== undefined">
+                    <span>缓存写入</span><b>{{ formatModelPrice(model.cache_write_price) }}</b>
+                  </div>
+                  <div><span>输出</span><b>{{ formatModelPrice(model.output_price) }}</b></div>
+                </div>
+              </article>
+            </div>
+          </article>
         </div>
       </section>
 
@@ -262,7 +253,7 @@
             <div class="tool-map-grid">
               <div>
                 <b>Codex CLI</b>
-                <span>走 OpenAI 兼容配置。订阅套餐就是 OpenAI 分类，模型用 gpt 系列。</span>
+                <span>走 OpenAI 兼容配置，按所选模型使用账户通用余额。</span>
               </div>
               <div>
                 <b>OpenCode</b>
@@ -304,7 +295,7 @@
           <div class="guide-notes">
             <div>
               <b>Key 从哪里来</b>
-              <span>登录 {{ siteConfig.brandName }} 后台，在 API 密钥页面创建 Key。订阅套餐绑定订阅分组；余额用户绑定额度分组。</span>
+              <span>登录 {{ siteConfig.brandName }} 后台，在 API 密钥页面创建 Key，并按需要绑定对应模型分组。</span>
             </div>
             <div>
               <b>切换不生效</b>
@@ -368,38 +359,6 @@
       </section>
     </main>
 
-    <!-- 模型弹窗 -->
-    <div v-if="modelModal" class="modal visible model-modal" role="dialog" aria-modal="true"
-      @click.self="modelModal = null">
-      <div class="modal-box" @wheel.stop>
-        <div class="modal-head">
-          <h3 class="modal-title">{{ modelModalTitle }} <span>({{ activeModelCount }} 个)</span></h3>
-          <button class="modal-close" type="button" @click="modelModal = null">×</button>
-        </div>
-        <div class="table-header">
-          <div>模型 ID</div>
-          <div>分类</div>
-          <div>状态</div>
-        </div>
-        <div class="modal-body">
-          <template v-for="section in activeModelSections" :key="section.label">
-            <div v-for="model in section.models" :key="`${section.label}-${model}`" class="model-item">
-              <div>{{ model }}</div>
-              <div class="tag-group">
-                <!-- 动态解析标签样式 -->
-                <span class="tag"
-                  :class="section.label === 'Claude' ? 'tag-orange' : (model.includes('image') ? 'tag-purple' : (model.includes('codex') ? 'tag-blue' : 'tag-gray'))">
-                  {{ section.label === 'Claude' ? 'Claude' : (model.includes('image') ? 'Image' :
-                    (model.includes('codex') ? 'Codex' : 'GPT-5')) }}
-                </span>
-              </div>
-              <div class="tag-group"><span class="tag tag-green">可用</span></div>
-            </div>
-          </template>
-        </div>
-      </div>
-    </div>
-
     <!-- 下单支付弹窗 (保留底层逻辑) -->
     <div v-if="checkoutVisible" class="modal visible checkout-modal" role="dialog" aria-modal="true"
       @click.self="closeCheckout">
@@ -425,7 +384,7 @@
           <div v-if="accountMode === 'login'" class="login-hint">
             这个邮箱已经注册过，请输入密码登录后购买；支付成功后会充值到这个账号。
           </div>
-          <label v-if="selectedProduct?.kind === 'balance'" class="field">
+          <label v-if="selectedProduct?.isCustom" class="field">
             <span>充值金额</span>
             <input v-model.number="balanceAmount" type="number" min="1" step="1" />
           </label>
@@ -438,14 +397,13 @@
           </label>
           <div class="order-summary">
             <div><span>商品</span><b>{{ selectedProduct?.title }}</b></div>
-            <div><span>类型</span><b>{{ selectedProduct?.kind === 'balance' ? '余额充值' : '订阅套餐' }}</b></div>
-            <div><span>{{ selectedProduct?.kind === 'balance' ? '支付金额' : '预计金额' }}</span><b>{{ selectedProduct?.kind === 'balance' ? formatCny(validBalanceAmount) :
-                selectedProduct?.priceLabel }}</b></div>
-            <div v-if="selectedProduct?.kind === 'balance'"><span>到账余额</span><b>{{ formatUsd(balanceCreditedAmount) }}</b></div>
-            <p v-if="selectedProduct?.kind === 'balance'" class="recharge-rate-line">
+            <div><span>类型</span><b>余额充值</b></div>
+            <div><span>支付金额</span><b>{{ formatCny(validBalanceAmount) }}</b></div>
+            <div><span>到账额度</span><b>{{ formatUsd(balanceCreditedAmount) }}</b></div>
+            <p class="recharge-rate-line">
               当前倍率：充值 {{ formatCny(1) }} 到账 {{ formatUsd(balanceRechargeMultiplier) }}
             </p>
-            <div v-if="selectedProduct?.kind === 'balance'"><span>可用范围</span><b>OpenAI / Claude 额度计费</b></div>
+            <div><span>可用范围</span><b>全平台模型通用</b></div>
           </div>
           <p v-if="checkoutError" class="error-text">{{ checkoutError }}</p>
           <button class="btn btn-primary checkout-submit" type="button" :disabled="submitting" @click="submitCheckout">
@@ -498,7 +456,7 @@
         <div v-else class="success-panel">
           <div class="success-mark">✓</div>
           <h3>支付成功，{{ issuedCredential?.isExisting ? '已充值到当前账号' : '账号已开通' }}</h3>
-          <p>请保存下面的登录信息，套餐或余额已由后端支付系统自动到账。</p>
+          <p>请保存下面的登录信息，充值余额已由后端支付系统自动到账。</p>
           <div class="credential-box">
             <div><span>账号邮箱</span><b>{{ issuedCredential?.email }}</b></div>
             <div v-if="!issuedCredential?.isExisting"><span>登录密码</span><b>{{ issuedCredential?.password }}</b></div>
@@ -522,7 +480,7 @@ import QRCode from 'qrcode'
 // 这里的引入保持你原文件的对应相对路径，如果之前是同目录API则无需改动
 import { cancelCheckoutOrder, checkCheckoutOrder, createCheckoutOrder, errorMessage, getCatalog, getCheckoutOrder } from './api'
 import { isValidEmail } from './account'
-import { catalogToProducts, fallbackCatalog, fallbackPaymentMethods, modelGroups, normalizeCatalog } from './products'
+import { catalogToProducts, fallbackCatalog, fallbackPaymentMethods, normalizeCatalog } from './products'
 import { chatHost, siteConfig } from './siteConfig'
 import type { AccountCredential, CatalogResponse, CreateOrderResult, OrderType, PaymentOrder, Product } from './types'
 
@@ -557,42 +515,29 @@ const catalogError = ref('')
 const defaultPaymentMethods = fallbackPaymentMethods
 const products = computed(() => catalogToProducts(catalog.value))
 
-// 为了实现“通用按量余额”的合并效果，我们将获取到的数据进行处理，保留展示逻辑
-// 核心逻辑：UI只会在 rowIndex === 0 显示合并好的样式
 const productRows = computed(() => {
   const list = products.value
   return [
-    list.slice(0, 1), // 这里强制只传一个 balance 给第 1 行渲染，因为模板里会直接将它覆写为通用余额
-    list.slice(1, 4),
-    list.slice(4, 7),
+    list.slice(0, 3),
+    list.slice(3, 6),
   ].filter((row) => row.length > 0)
 })
 
 const tutorialTab = ref<'ccswitch' | 'openclaw'>('ccswitch')
-const modelModal = ref<'openai' | 'claude' | 'balance' | null>(null)
+const modelPlatforms = computed(() => (catalog.value.models || [])
+  .filter((platform) => platform?.name && Array.isArray(platform.models) && platform.models.length)
+  .map((platform) => ({
+    ...platform,
+    models: [...platform.models].sort((a, b) => {
+      const left = a.release_date ? new Date(a.release_date).getTime() : 0
+      const right = b.release_date ? new Date(b.release_date).getTime() : 0
+      return right - left
+    }),
+  })))
 
-// 动态合并弹窗模型列表数据
-const activeModelSections = computed(() => {
-  if (modelModal.value === 'balance') {
-    return [
-      { label: 'OpenAI', models: modelGroups.openai },
-      { label: 'Claude', models: modelGroups.claude },
-    ]
-  }
-  if (modelModal.value === 'claude') {
-    return [{ label: 'Claude', models: modelGroups.claude }]
-  }
-  return [{ label: 'OpenAI', models: modelGroups.openai }]
-})
-const activeModelCount = computed(() => activeModelSections.value.reduce((total, section) => total + section.models.length, 0))
-const modelModalTitle = computed(() => {
-  if (modelModal.value === 'balance') return '余额计费可用模型'
-  if (modelModal.value === 'claude') return 'Claude 分类可用模型'
-  return 'OpenAI 分类可用模型'
-})
-
-function openModelModal(platform: 'openai' | 'claude' | 'balance') {
-  modelModal.value = platform
+function formatModelPrice(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '按后台计费'
+  return `$${Number(value).toFixed(2)}`
 }
 
 const checkoutVisible = ref(false)
@@ -618,7 +563,7 @@ let pollTimer: number | null = null
 let clockTimer: number | null = null
 let previousBodyOverflow = ''
 
-const pageScrollLocked = computed(() => Boolean(modelModal.value || checkoutVisible.value))
+const pageScrollLocked = computed(() => Boolean(checkoutVisible.value))
 
 function lockPageScroll(locked: boolean): void {
   if (typeof document === 'undefined') return
@@ -710,7 +655,7 @@ const orderStatusTitle = computed(() => {
 
 const orderStatusText = computed(() => {
   const status = latestOrder.value?.status || 'PENDING'
-  if (status === 'COMPLETED') return '后端已确认支付并完成套餐/余额发放。'
+  if (status === 'COMPLETED') return '后端已确认支付并完成余额发放。'
   if (status === 'PAID' || status === 'RECHARGING') return '支付已确认，正在完成到账，请稍等。'
   if (status === 'CANCELLED') return '你已取消本次订单，可以重新选择支付方式或重新下单。'
   if (status === 'FAILED') return '支付或到账处理失败，请联系售后处理。'
@@ -1601,6 +1546,116 @@ onBeforeUnmount(() => {
 
 .pricing {
   margin-bottom: 100px;
+}
+
+.model-catalog-section {
+  margin: 0 auto 112px;
+  max-width: 1100px;
+}
+
+.model-catalog-section .section-head {
+  margin-bottom: 34px;
+}
+
+.model-platforms {
+  display: grid;
+  gap: 28px;
+}
+
+.model-platform {
+  padding: 28px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 18px 48px -40px rgba(15, 23, 42, 0.4);
+}
+
+.platform-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #edf0f3;
+}
+
+.platform-mark {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
+  background: #111827;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0;
+}
+
+.platform-heading h3 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.platform-heading p {
+  margin: 4px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.model-price-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 20px;
+}
+
+.model-price-card {
+  min-width: 0;
+  padding: 17px 16px 15px;
+  border: 1px solid #e8edf2;
+  border-radius: 10px;
+  background: #fff;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.model-price-card:hover {
+  transform: translateY(-3px);
+  border-color: #cbd5e1;
+  box-shadow: 0 14px 24px -18px rgba(15, 23, 42, 0.6);
+}
+
+.model-name {
+  overflow: hidden;
+  margin-bottom: 13px;
+  color: #0f172a;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-prices {
+  display: grid;
+  gap: 7px;
+}
+
+.model-prices div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.model-prices b {
+  color: #111827;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 800;
+  text-align: right;
 }
 
 .pricing-grid {
@@ -3400,6 +3455,10 @@ onBeforeUnmount(() => {
   .chat-benefits {
     grid-template-columns: 1fr;
   }
+
+  .model-price-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -3429,6 +3488,14 @@ onBeforeUnmount(() => {
   .price-card,
   .balance-more-card {
     min-width: 100%;
+  }
+
+  .model-platform {
+    padding: 20px 16px;
+  }
+
+  .model-price-grid {
+    grid-template-columns: 1fr;
   }
 
   .table-header,
