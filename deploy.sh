@@ -67,7 +67,9 @@ docker_compose_cmd() {
 }
 
 prepare_project_source() {
-  if [[ "$REMOTE_INSTALL" != "1" ]] && is_project_root "$PROJECT_ROOT"; then
+  local force_update="${1:-0}"
+
+  if [[ "$force_update" != "1" && "$REMOTE_INSTALL" != "1" ]] && is_project_root "$PROJECT_ROOT"; then
     return
   fi
 
@@ -78,6 +80,7 @@ prepare_project_source() {
     info "更新源码: ${PROJECT_ROOT}"
     git -C "$PROJECT_ROOT" fetch --depth 1 origin "$SOURCE_REPO_BRANCH"
     git -C "$PROJECT_ROOT" checkout -f FETCH_HEAD
+    info "当前源码提交: $(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
     return
   fi
 
@@ -457,7 +460,7 @@ deploy_service() {
 }
 
 upgrade_service() {
-  prepare_project_source
+  prepare_project_source 1
   refresh_paths
   ensure_env_file
   ensure_runtime_dir
