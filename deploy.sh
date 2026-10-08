@@ -74,13 +74,18 @@ prepare_project_source() {
   fi
 
   require_cmd git
+  require_cmd grep
   mkdir -p "$(dirname "$PROJECT_ROOT")"
 
   if [[ -d "$PROJECT_ROOT/.git" ]]; then
     info "更新源码: ${PROJECT_ROOT}"
+    ensure_git_origin
+    info "源码地址: $(git -C "$PROJECT_ROOT" remote get-url origin)"
+    info "源码分支: ${SOURCE_REPO_BRANCH}"
     git -C "$PROJECT_ROOT" fetch --depth 1 origin "$SOURCE_REPO_BRANCH"
     git -C "$PROJECT_ROOT" checkout -f FETCH_HEAD
     info "当前源码提交: $(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
+    verify_storefront_source
     return
   fi
 
@@ -94,6 +99,34 @@ prepare_project_source() {
 
   info "克隆源码到 ${PROJECT_ROOT}"
   git clone --depth 1 --branch "$SOURCE_REPO_BRANCH" "$SOURCE_REPO_URL" "$PROJECT_ROOT"
+  info "当前源码提交: $(git -C "$PROJECT_ROOT" rev-parse --short HEAD)"
+  verify_storefront_source
+}
+
+ensure_git_origin() {
+  local current_url
+  current_url="$(git -C "$PROJECT_ROOT" remote get-url origin 2>/dev/null || true)"
+  if [[ -z "$current_url" ]]; then
+    git -C "$PROJECT_ROOT" remote add origin "$SOURCE_REPO_URL"
+    return
+  fi
+
+  if [[ "$current_url" != "$SOURCE_REPO_URL" ]]; then
+    warn "修正源码远程地址: ${current_url} -> ${SOURCE_REPO_URL}"
+    git -C "$PROJECT_ROOT" remote set-url origin "$SOURCE_REPO_URL"
+  fi
+}
+
+verify_storefront_source() {
+  if [[ ! -f "${PROJECT_ROOT}/server/index.mjs" || ! -f "${PROJECT_ROOT}/src/products.ts" || ! -f "${PROJECT_ROOT}/src/App.vue" ]]; then
+    die "源码目录不完整，未找到前端或后端入口文件: ${PROJECT_ROOT}"
+  fi
+
+  if ! grep -Fq "plans: []" "${PROJECT_ROOT}/server/index.mjs" \
+    || ! grep -Fq "QUICK_RECHARGE_AMOUNTS" "${PROJECT_ROOT}/src/products.ts" \
+    || ! grep -Fq "快捷充值" "${PROJECT_ROOT}/src/App.vue"; then
+    die "拉取到的源码仍是旧版套餐页面，请检查源码地址和分支。"
+  fi
 }
 
 ensure_env_file() {
@@ -468,7 +501,7 @@ upgrade_service() {
 
   info "升级服务..."
   prompt_admin_config
-  (cd "$PROJECT_ROOT" && $(docker_compose_cmd) build)
+  (cd "$PROJECT_ROOT" && $(docker_compose_cmd) build --no-cache)
   start_service
   show_access
 }
