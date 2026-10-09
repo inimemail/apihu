@@ -25,8 +25,20 @@ test('small cache prices stay visible and missing prices are not shown as free',
 
 test('fallback cache pricing preserves separate reads and both write TTLs', () => {
   const groups = modelPriceGroups({ id: 'test', name: 'test', input_price: 3, output_price: 15, cache_read_price: .3, cache_write_price: 3, cache_write_1h_price: 6 })
-  assert.deepEqual(groups[0].rows.map((row) => row.label), ['输入', '缓存读取', '缓存写入 · 5m', '缓存写入 · 1h', '输出'])
-  assert.deepEqual(groups[0].rows.map((row) => row.price), [3, .3, 3, 6, 15])
+  assert.deepEqual(groups[0].rows.map((row) => row.label), ['输入', '输出', '缓存读取', '缓存写入 · 5m', '缓存写入 · 1h'])
+  assert.deepEqual(groups[0].rows.map((row) => row.price), [3, 15, .3, 3, 6])
+})
+
+test('supplementary pricing groups are never displayed, including from cached catalogs', () => {
+  const primary = { label: '输入 > 200K', unit: 'USD / 1M tokens', rows: [{ key: 'input_price', label: '输入', price: 2 }, { key: 'output_price', label: '输出', price: 10 }] }
+  const extra = { label: '其他计价项', unit: 'USD / 分钟', rows: [{ key: 'input_cost_per_second', label: '音频输入', price: .01 }] }
+  const model = { id: 'test', name: 'test', price_groups: [primary, extra] }
+  assert.deepEqual(modelPriceGroups(model), [primary])
+  assert.equal(model.price_groups.length, 2)
+  assert.deepEqual(modelPriceGroups({ ...model, price_groups: [extra] })[0].rows.map((row) => row.price), [null, null])
+  for (const platform of fallbackCatalog.models) for (const model of platform.models) {
+    assert.ok(modelPriceGroups(model).every((group) => group.label !== '其他计价项'))
+  }
 })
 
 test('five quick recharges use the same backend multiplier and never subscription plans', () => {

@@ -95,12 +95,16 @@
             </div>
             <div class="model-price-grid">
               <article v-for="model in platform.models" :key="model.id" class="model-price-card">
-                <div class="model-name">{{ model.name }}</div>
-                <div v-for="(priceGroup, index) in modelPriceGroups(model)" :key="index" class="model-price-group">
-                  <div class="model-price-unit"><span>{{ priceGroup.label }}</span><span>{{ priceGroup.unit }}</span></div>
-                  <div class="model-prices">
-                    <div v-for="row in priceGroup.rows" :key="row.key">
-                      <span>{{ row.label }}</span><b>{{ formatModelPrice(row.price) }}</b>
+                <header class="model-card-heading">
+                  <h4 class="model-name">{{ model.name }}</h4>
+                </header>
+                <div class="model-card-pricing">
+                  <div v-for="(priceGroup, index) in modelPriceGroups(model)" :key="index" class="model-price-group">
+                    <div class="model-price-unit"><span v-if="priceGroup.label" class="model-price-tier">{{ priceGroup.label }}</span><span>{{ priceGroup.unit }}</span></div>
+                    <div class="model-prices">
+                      <div v-for="row in priceGroup.rows" :key="row.key" :class="{ 'cache-price': row.key.startsWith('cache') }">
+                        <span>{{ row.label }}</span><b>{{ formatModelPrice(row.price) }}</b>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1708,74 +1712,115 @@ onBeforeUnmount(() => {
 .model-price-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: start;
-  gap: 12px;
+  align-items: stretch;
+  gap: 16px;
   padding-top: 20px;
 }
 
 .model-price-card {
+  display: flex;
+  flex-direction: column;
   min-width: 0;
-  padding: 17px 16px 15px;
-  border: 1px solid #e8edf2;
+  min-height: 224px;
+  border: 1px solid #dfe6e4;
   border-radius: 8px;
   background: #fff;
-  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  box-shadow: 0 2px 4px rgba(20, 39, 32, 0.025);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .model-price-card:hover {
-  transform: translateY(-3px);
-  border-color: #cbd5e1;
-  box-shadow: 0 14px 24px -18px rgba(15, 23, 42, 0.6);
+  border-color: #91b8ae;
+  box-shadow: 0 4px 14px rgba(20, 39, 32, 0.06);
+}
+
+.model-card-heading {
+  display: flex;
+  align-items: flex-start;
+  min-height: 64px;
+  padding: 19px 20px 17px;
+  border-bottom: 1px solid #edf1ef;
+}
+
+.model-card-pricing {
+  flex: 1;
+  padding: 15px 20px 19px;
 }
 
 .model-name {
-  margin-bottom: 13px;
-  color: #0f172a;
-  font-family: var(--font-mono);
-  font-size: 14px;
-  font-weight: 800;
+  min-width: 0;
+  margin: 0;
+  color: #192822;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 15px;
+  font-weight: 600;
   overflow-wrap: anywhere;
   line-height: 1.5;
+  letter-spacing: 0;
 }
 
 .model-price-group + .model-price-group {
-  margin-top: 14px;
-  padding-top: 12px;
-  border-top: 1px solid #edf0f3;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #edf1ef;
 }
 
 .model-price-unit {
   display: flex;
   flex-wrap: wrap;
   justify-content: space-between;
-  gap: 4px 8px;
-  margin-bottom: 10px;
-  color: #737e84;
-  font-size: 10px;
+  gap: 4px 12px;
+  margin-bottom: 12px;
+  color: #77817c;
+  font-size: 11px;
   line-height: 1.5;
+}
+
+.model-price-tier {
+  color: #257460;
+  font-weight: 600;
 }
 
 .model-prices {
   display: grid;
-  gap: 7px;
+  gap: 6px;
 }
 
 .model-prices div {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
-  color: var(--text-muted);
-  font-size: 12px;
+  align-items: baseline;
+  min-height: 23px;
+  color: #46534c;
+  font-size: 13px;
   line-height: 1.6;
   overflow-wrap: anywhere;
 }
 
 .model-prices b {
-  color: #111827;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 800;
+  color: #17251e;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
   text-align: right;
+}
+
+.model-prices .cache-price {
+  color: #748078;
+  font-size: 12px;
+}
+
+.model-prices div:not(.cache-price) + .cache-price {
+  margin-top: 3px;
+  padding-top: 9px;
+  border-top: 1px solid #edf1ef;
+}
+
+.model-prices .cache-price b {
+  color: #4f6257;
+  font-size: 13px;
 }
 
 .pricing-grid {
