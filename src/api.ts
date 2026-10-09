@@ -4,6 +4,7 @@ import type {
   CheckoutOrderState,
   CreateCheckoutOrderRequest,
   CreateCheckoutOrderResponse,
+  ModelPricingPlatform,
 } from './types'
 
 const API_BASE_URL = (import.meta.env.VITE_CHECKOUT_API_BASE_URL || '/api/checkout').replace(/\/$/, '')
@@ -66,6 +67,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
 export function getCatalog(): Promise<CatalogResponse> {
   return request<CatalogResponse>('/catalog')
+}
+
+export function getModelCatalog(): Promise<{ models: ModelPricingPlatform[] }> {
+  return request('/models')
 }
 
 export function createCheckoutOrder(input: CreateCheckoutOrderRequest): Promise<CreateCheckoutOrderResponse> {

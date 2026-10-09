@@ -84,6 +84,17 @@ export interface ModelPricingItem {
   cache_read_price?: number | null
   cache_write_price?: number | null
   output_price?: number | null
+  cache_write_1h_price?: number | null
+  price_groups?: ModelPriceGroup[]
+  price_source?: string
+  price_source_url?: string
+  verified_at?: string
+}
+
+export interface ModelPriceGroup {
+  label: string
+  unit: string
+  rows: Array<{ key: string; label: string; price: number | null }>
 }
 
 export interface ModelPricingPlatform {

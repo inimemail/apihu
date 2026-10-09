@@ -15,3 +15,7 @@ services:
       - "0.0.0.0:${PORT:-32874}:${PORT:-32874}"
     volumes:
       - ./.deploy/admin-password:/app/.secrets/admin-password:ro
+      - model-catalog-cache:/app/.cache
+
+volumes:
+  model-catalog-cache:

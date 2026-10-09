@@ -68,11 +68,24 @@
 
       <section id="models" class="model-catalog-section">
         <div class="section-head animate-enter">
-          <h2>支持的平台与模型</h2>
-          <p>按平台查看模型计费价格，价格单位均为每 1M tokens。</p>
+          <h2>模型价格</h2>
+          <p>公开参考价格 · USD / 1M tokens · 图片、音频与视频按对应单位计价</p>
+        </div>
+        <div class="model-catalog-toolbar">
+          <div class="model-platform-tabs" role="group" aria-label="模型平台">
+            <button type="button" :aria-pressed="selectedModelPlatform === 'all'"
+              :class="{ active: selectedModelPlatform === 'all' }" @click="selectedModelPlatform = 'all'">全部</button>
+            <button v-for="platform in availableModelPlatforms" :key="platform.id" type="button"
+              :aria-pressed="selectedModelPlatform === platform.id" :class="{ active: selectedModelPlatform === platform.id }"
+              @click="selectedModelPlatform = platform.id">{{ platform.name }}</button>
+          </div>
+          <div class="model-search-wrap">
+            <Search :size="16" aria-hidden="true" />
+            <input v-model="modelQuery" class="model-search" type="search" placeholder="搜索模型" aria-label="搜索模型" />
+          </div>
         </div>
         <div class="model-platforms">
-          <article v-for="platform in modelPlatforms" :key="platform.id" class="model-platform animate-enter">
+          <article v-for="platform in modelPlatforms" :key="platform.id" class="model-platform animate-enter" :data-platform="platform.id">
             <div class="platform-heading">
               <div class="platform-mark">{{ platform.short_name || platform.name.slice(0, 2) }}</div>
               <div>
@@ -83,21 +96,19 @@
             <div class="model-price-grid">
               <article v-for="model in platform.models" :key="model.id" class="model-price-card">
                 <div class="model-name">{{ model.name }}</div>
-                <div class="model-prices">
-                  <div><span>输入</span><b>{{ formatModelPrice(model.input_price) }}</b></div>
-                  <div v-if="model.cache_read_price !== undefined || model.cache_write_price !== undefined">
-                    <span>{{ model.cache_write_price !== undefined ? '缓存读取' : '缓存' }}</span>
-                    <b>{{ formatModelPrice(model.cache_read_price ?? model.cache_write_price) }}</b>
+                <div v-for="(priceGroup, index) in modelPriceGroups(model)" :key="index" class="model-price-group">
+                  <div class="model-price-unit"><span>{{ priceGroup.label }}</span><span>{{ priceGroup.unit }}</span></div>
+                  <div class="model-prices">
+                    <div v-for="row in priceGroup.rows" :key="row.key">
+                      <span>{{ row.label }}</span><b>{{ formatModelPrice(row.price) }}</b>
+                    </div>
                   </div>
-                  <div v-if="model.cache_write_price !== undefined && model.cache_read_price !== undefined">
-                    <span>缓存写入</span><b>{{ formatModelPrice(model.cache_write_price) }}</b>
-                  </div>
-                  <div><span>输出</span><b>{{ formatModelPrice(model.output_price) }}</b></div>
                 </div>
               </article>
             </div>
           </article>
         </div>
+        <div v-if="!modelPlatforms.length" class="model-empty">没有匹配的模型</div>
       </section>
 
       <!-- 英雄主视觉区 -->
@@ -476,12 +487,14 @@
 <script setup lang="ts">
 import { computed, defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import QRCode from 'qrcode'
+import { Search } from '@lucide/vue'
 
 // 这里的引入保持你原文件的对应相对路径，如果之前是同目录API则无需改动
-import { cancelCheckoutOrder, checkCheckoutOrder, createCheckoutOrder, errorMessage, getCatalog, getCheckoutOrder } from './api'
+import { cancelCheckoutOrder, checkCheckoutOrder, createCheckoutOrder, errorMessage, getCatalog, getCheckoutOrder, getModelCatalog } from './api'
 import { isValidEmail } from './account'
 import { catalogToProducts, fallbackCatalog, fallbackPaymentMethods, normalizeCatalog } from './products'
 import { chatHost, siteConfig } from './siteConfig'
+import { formatModelPrice, modelPriceGroups } from './modelPricing'
 import type { AccountCredential, CatalogResponse, CreateOrderResult, OrderType, PaymentOrder, Product } from './types'
 
 const brandLetters = computed(() => Array.from(siteConfig.brandName))
@@ -524,21 +537,25 @@ const productRows = computed(() => {
 })
 
 const tutorialTab = ref<'ccswitch' | 'openclaw'>('ccswitch')
-const modelPlatforms = computed(() => (catalog.value.models || [])
+const selectedModelPlatform = ref('all')
+const modelQuery = ref('')
+const independentModels = ref<CatalogResponse['models']>(undefined)
+const availableModelPlatforms = computed(() => (independentModels.value || catalog.value.models || [])
   .filter((platform) => platform?.name && Array.isArray(platform.models) && platform.models.length)
   .map((platform) => ({
     ...platform,
     models: [...platform.models].sort((a, b) => {
       const left = a.release_date ? new Date(a.release_date).getTime() : 0
       const right = b.release_date ? new Date(b.release_date).getTime() : 0
-      return right - left
+      return (right || 0) - (left || 0) || a.name.localeCompare(b.name, 'en', { numeric: true })
     }),
   })))
-
-function formatModelPrice(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '按后台计费'
-  return `$${Number(value).toFixed(2)}`
-}
+const modelPlatforms = computed(() => {
+  const query = modelQuery.value.trim().toLowerCase()
+  return availableModelPlatforms.value.filter((platform) => selectedModelPlatform.value === 'all' || selectedModelPlatform.value === platform.id)
+    .map((platform) => ({ ...platform, models: platform.models.filter((model) => !query || model.name.toLowerCase().includes(query)) }))
+    .filter((platform) => platform.models.length)
+})
 
 const checkoutVisible = ref(false)
 const checkoutStep = ref<'form' | 'paying' | 'success'>('form')
@@ -1032,6 +1049,9 @@ async function restorePaymentIfNeeded(): Promise<void> {
 
 onMounted(() => {
   void loadCatalog()
+  void getModelCatalog().then((data) => {
+    if (data.models?.length) independentModels.value = data.models
+  }).catch(() => { /* The bundled directory remains available offline. */ })
   void restorePaymentIfNeeded()
 })
 
@@ -1551,6 +1571,7 @@ onBeforeUnmount(() => {
 .model-catalog-section {
   margin: 0 auto 112px;
   max-width: 1100px;
+  scroll-margin-top: 84px;
 }
 
 .model-catalog-section .section-head {
@@ -1559,15 +1580,84 @@ onBeforeUnmount(() => {
 
 .model-platforms {
   display: grid;
-  gap: 28px;
+  gap: 48px;
 }
 
 .model-platform {
-  padding: 28px;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.78);
-  box-shadow: 0 18px 48px -40px rgba(15, 23, 42, 0.4);
+  min-width: 0;
+}
+
+.model-catalog-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.model-platform-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+  flex: 1 1 640px;
+}
+
+.model-platform-tabs button {
+  min-height: 38px;
+  padding: 6px 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: #657078;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.model-platform-tabs button:hover,
+.model-platform-tabs button.active {
+  color: #0b7664;
+  border-bottom-color: #0b7664;
+}
+
+.model-search-wrap {
+  display: flex;
+  align-items: center;
+  flex: 1 1 200px;
+  min-width: 0;
+  max-width: 320px;
+  position: relative;
+}
+
+.model-search-wrap > svg {
+  position: absolute;
+  left: 12px;
+  color: #79858a;
+  pointer-events: none;
+}
+
+.model-search {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px 0 36px;
+  border: 1px solid #d4dce0;
+  border-radius: 6px;
+  background: #fff;
+  color: #20282b;
+  font: inherit;
+  font-size: 13px;
+}
+
+.model-search:focus-visible {
+  outline: 2px solid #0b7664;
+  outline-offset: 2px;
+}
+
+.model-empty {
+  padding: 48px 0;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 .platform-heading {
@@ -1583,13 +1673,24 @@ onBeforeUnmount(() => {
   place-items: center;
   width: 46px;
   height: 46px;
-  border-radius: 13px;
+  flex-shrink: 0;
+  border-radius: 8px;
   background: #111827;
   color: #fff;
   font-size: 14px;
   font-weight: 900;
   letter-spacing: 0;
 }
+
+.model-platform[data-platform="anthropic"] .platform-mark { background: #b86650; }
+.model-platform[data-platform="gemini"] .platform-mark { background: #397bc3; }
+.model-platform[data-platform="deepseek"] .platform-mark { background: #3169d8; }
+.model-platform[data-platform="kimi"] .platform-mark { background: #378654; }
+.model-platform[data-platform="zhipu"] .platform-mark { background: #6a51a3; }
+.model-platform[data-platform="minimax"] .platform-mark { background: #bb496d; }
+.model-platform[data-platform="antigravity"] .platform-mark { background: #36796c; }
+.model-platform[data-platform="opencode_go"] .platform-mark { background: #555f5a; }
+.model-platform[data-platform="typesafe"] .platform-mark { background: #946b23; }
 
 .platform-heading h3 {
   margin: 0;
@@ -1607,6 +1708,7 @@ onBeforeUnmount(() => {
 .model-price-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: start;
   gap: 12px;
   padding-top: 20px;
 }
@@ -1615,7 +1717,7 @@ onBeforeUnmount(() => {
   min-width: 0;
   padding: 17px 16px 15px;
   border: 1px solid #e8edf2;
-  border-radius: 10px;
+  border-radius: 8px;
   background: #fff;
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
@@ -1627,14 +1729,30 @@ onBeforeUnmount(() => {
 }
 
 .model-name {
-  overflow: hidden;
   margin-bottom: 13px;
   color: #0f172a;
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 800;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
+  line-height: 1.5;
+}
+
+.model-price-group + .model-price-group {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid #edf0f3;
+}
+
+.model-price-unit {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 8px;
+  margin-bottom: 10px;
+  color: #737e84;
+  font-size: 10px;
+  line-height: 1.5;
 }
 
 .model-prices {
@@ -1643,11 +1761,13 @@ onBeforeUnmount(() => {
 }
 
 .model-prices div {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
   color: var(--text-muted);
   font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .model-prices b {
@@ -3470,7 +3590,23 @@ onBeforeUnmount(() => {
   }
 
   .nav {
-    gap: 18px;
+    gap: 4px;
+  }
+
+  .brand {
+    gap: 6px;
+    font-size: 17px;
+  }
+
+  .brand-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .nav a {
+    padding: 4px;
+    font-size: 12px;
+    white-space: nowrap;
   }
 
   .title {
@@ -3491,7 +3627,15 @@ onBeforeUnmount(() => {
   }
 
   .model-platform {
-    padding: 20px 16px;
+    padding: 0;
+  }
+
+  .model-search-wrap {
+    max-width: none;
+  }
+
+  .model-catalog-toolbar {
+    gap: 12px;
   }
 
   .model-price-grid {
@@ -3527,6 +3671,10 @@ onBeforeUnmount(() => {
 
 :global(body.codex-modal-open) {
   overflow: hidden !important;
+}
+
+:global(body.codex-modal-open .woot--bubble-holder) {
+  display: none !important;
 }
 
 :global(*) {

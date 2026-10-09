@@ -11,10 +11,14 @@
     "preview": "node server/index.mjs --production",
     "preview:vite": "vite preview --host 0.0.0.0",
     "typecheck": "vue-tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "models:sync": "node scripts/sync-model-catalog.mjs",
     "deploy": "bash deploy.sh"
   },
   "dependencies": {
+    "@lucide/vue": "^1.53.0",
     "@vitejs/plugin-vue": "^5.2.3",
+    "cheerio": "^1.2.0",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "morgan": "^1.10.0",

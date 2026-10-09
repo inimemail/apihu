@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url'
 import dotenv from 'dotenv'
 import express from 'express'
 import morgan from 'morgan'
+import { catalogFromChannels, createCatalogStore, fetchCatalogJSON, mergeCatalogs, normalizeCatalogOverride, restoreCatalogSnapshot, PRICE_SOURCE_URL, METADATA_SOURCE_URL } from './model-catalog.mjs'
+import { refreshPublicCatalog } from './official-pricing.mjs'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -26,7 +28,52 @@ const groupPlanPriceMin = Number(process.env.CHECKOUT_GROUP_PLAN_PRICE_MIN || 1)
 const groupPlanPriceOverrides = parsePriceOverrides(process.env.CHECKOUT_GROUP_PLAN_PRICE_OVERRIDES || '')
 const storefrontPlanPrices = [6.99, 39.99, 119.99, 169.99, 239.99]
 const storefrontPopularTier = Number(process.env.CHECKOUT_POPULAR_PLAN_TIER || 4)
-const storefrontModelCatalog = parseModelCatalog(process.env.CHECKOUT_MODEL_CATALOG_JSON || '')
+const storefrontModelCatalog = normalizeCatalogOverride(process.env.CHECKOUT_MODEL_CATALOG_JSON || '')
+const bundledModels = JSON.parse(fs.readFileSync(path.join(projectRoot, 'src/data/model-catalog.json'), 'utf8'))
+const modelSupplements = JSON.parse(fs.readFileSync(path.join(projectRoot, 'data/model-supplements.json'), 'utf8'))
+const modelCacheFile = path.join(process.env.CHECKOUT_MODEL_CACHE_DIR || path.join(projectRoot, '.cache'), 'model-catalog.json')
+let initialModels = bundledModels.platforms
+try {
+  const cached = JSON.parse(fs.readFileSync(modelCacheFile, 'utf8'))
+  initialModels = restoreCatalogSnapshot(bundledModels, cached)
+} catch { /* The bundled catalog is the first-run and offline fallback. */ }
+let backendChannels = []
+const modelRefreshMs = Math.max(300_000, firstPositiveNumber(process.env.CHECKOUT_MODEL_REFRESH_HOURS, 24) * 3_600_000)
+const modelCatalogStore = createCatalogStore({
+  initial: mergeCatalogs(initialModels, storefrontModelCatalog),
+  intervalMs: modelRefreshMs,
+  onError: (error) => console.warn('[api-dz] keeping cached model catalog:', error.message),
+  async refresh(previous) {
+    const platforms = await refreshPublicCatalog({
+      previous,
+      supplements: modelSupplements,
+      fetchPricing: () => fetchCatalogJSON(process.env.CHECKOUT_MODEL_PRICE_URL || PRICE_SOURCE_URL),
+      fetchMetadata: () => fetchCatalogJSON(process.env.CHECKOUT_MODEL_METADATA_URL || METADATA_SOURCE_URL),
+    })
+    try {
+      const token = await getAdminToken()
+      const channels = []
+      for (let page = 1; page <= 100; page++) {
+        const data = await sub2api(`/admin/channels?status=active&page=${page}&page_size=100`, { token, timeoutMs: 8000 })
+        if (!Array.isArray(data?.items)) throw new Error('Invalid channel catalog')
+        channels.push(...data.items)
+        if (data.items.length < 100 || (Number(data.total) > 0 && channels.length >= Number(data.total))) break
+      }
+      backendChannels = channels
+    } catch (error) {
+      console.warn('[api-dz] channel models unavailable; retaining model directory:', error.message)
+    }
+    const result = mergeCatalogs(platforms, catalogFromChannels(backendChannels, platforms), storefrontModelCatalog)
+    try {
+      fs.mkdirSync(path.dirname(modelCacheFile), { recursive: true })
+      fs.writeFileSync(`${modelCacheFile}.tmp`, JSON.stringify({ updated_at: new Date().toISOString(), platforms: result }))
+      fs.renameSync(`${modelCacheFile}.tmp`, modelCacheFile)
+    } catch (error) {
+      console.warn('[api-dz] model cache write failed:', error.message)
+    }
+    return result
+  },
+})
 
 function readSecretValue(name, fallbackFiles = []) {
   const fileCandidates = [
@@ -71,6 +118,10 @@ app.get('/api/checkout/health', (_req, res) => {
   }))
 })
 
+app.get('/api/checkout/models', (_req, res) => {
+  res.json(ok({ models: modelCatalogStore.get() }))
+})
+
 app.get('/api/checkout/catalog', async (_req, res) => {
   try {
     requireAdminConfig()
@@ -105,7 +156,7 @@ app.get('/api/checkout/catalog', async (_req, res) => {
       },
       methods: visiblePaymentMethods(checkoutInfo?.methods || {}),
       plans: [],
-      ...(storefrontModelCatalog.length ? { models: storefrontModelCatalog } : {}),
+      models: modelCatalogStore.get(),
       help_text: checkoutInfo?.help_text || '',
       help_image_url: checkoutInfo?.help_image_url || '',
     }))
@@ -264,6 +315,8 @@ app.listen(port, host, () => {
   console.log(`[api-dz] sub2api ${sub2apiBaseURL}`)
   console.log(`[api-dz] admin email: ${adminEmail ? 'set' : 'missing'}, password: ${adminPassword ? 'set' : 'missing'}, password file: ${process.env.SUB2API_ADMIN_PASSWORD_FILE || 'unset'}`)
 })
+modelCatalogStore.get()
+setInterval(() => modelCatalogStore.get(), modelRefreshMs).unref()
 
 function normalizeBaseURL(value) {
   return String(value || '').replace(/\/+$/, '')
@@ -353,6 +406,7 @@ async function sub2api(pathname, options = {}) {
     method: options.method || 'GET',
     headers,
     body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    ...(options.timeoutMs ? { signal: AbortSignal.timeout(options.timeoutMs) } : {}),
   })
 
   const text = await response.text()
@@ -374,10 +428,11 @@ async function sub2api(pathname, options = {}) {
   return payload?.data
 }
 
-async function loginUser(email, password) {
+async function loginUser(email, password, timeoutMs) {
   const data = await sub2api('/auth/login', {
     method: 'POST',
     body: { email, password },
+    timeoutMs,
   })
   if (data?.requires_2fa) {
     throw badRequest('该账号开启了二次验证，当前购买页无法直接登录，请先在后台处理。', 'TWO_FACTOR_REQUIRED')
@@ -405,7 +460,7 @@ async function getAdminToken() {
   if (adminSession?.access_token && adminSession.expires_at > now + 60_000) {
     return adminSession.access_token
   }
-  const auth = await loginUser(adminEmail, adminPassword)
+  const auth = await loginUser(adminEmail, adminPassword, 8000)
   adminSession = {
     access_token: auth.access_token,
     expires_at: now + Number(auth.expires_in || 1800) * 1000,
@@ -820,42 +875,6 @@ function parsePriceOverrides(value) {
     if (key && price > 0) map.set(key.trim(), price)
   }
   return map
-}
-
-function parseModelCatalog(value) {
-  if (!value) return []
-  try {
-    const parsed = JSON.parse(value)
-    if (!Array.isArray(parsed)) return []
-    return parsed
-      .filter((platform) => platform && platform.name && Array.isArray(platform.models))
-      .map((platform) => ({
-        id: String(platform.id || platform.name).toLowerCase().replace(/\s+/g, '-'),
-        name: String(platform.name),
-        short_name: platform.short_name ? String(platform.short_name) : undefined,
-        models: platform.models
-          .filter((model) => model && (model.name || model.id))
-          .map((model) => ({
-            id: String(model.id || model.name),
-            name: String(model.name || model.id),
-            release_date: model.release_date ? String(model.release_date) : undefined,
-            input_price: finiteOrNull(model.input_price),
-            cache_read_price: finiteOrNull(model.cache_read_price),
-            cache_write_price: finiteOrNull(model.cache_write_price),
-            output_price: finiteOrNull(model.output_price),
-          })),
-      }))
-      .filter((platform) => platform.models.length)
-  } catch (error) {
-    console.warn('[api-dz] invalid CHECKOUT_MODEL_CATALOG_JSON:', error.message)
-    return []
-  }
-}
-
-function finiteOrNull(value) {
-  if (value === null || value === undefined || value === '') return null
-  const number = Number(value)
-  return Number.isFinite(number) ? number : null
 }
 
 function requireCheckout(id) {

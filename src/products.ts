@@ -1,4 +1,5 @@
-import type { CatalogResponse, ModelPricingPlatform, PaymentMethod, Product } from './types'
+import type { CatalogResponse, PaymentMethod, Product } from './types'
+import modelCatalog from './data/model-catalog.json'
 
 export const fallbackPaymentMethods: PaymentMethod[] = [
   { id: 'alipay', label: '支付宝', limit: null },
@@ -25,42 +26,12 @@ export const fallbackCatalog: CatalogResponse = {
   },
   methods: fallbackPaymentMethods,
   plans: [],
-  models: fallbackModelCatalog(),
+  models: modelCatalog.platforms,
   help_text: '',
   help_image_url: '',
 }
 
 const QUICK_RECHARGE_AMOUNTS = [10, 30, 50, 100, 200]
-
-function fallbackModelCatalog(): ModelPricingPlatform[] {
-  return [
-    {
-      id: 'openai',
-      name: 'OpenAI',
-      models: [
-        'gpt-5.5',
-        'gpt-5.4',
-        'gpt-5.4-mini',
-        'gpt-5.3-codex',
-        'gpt-5.3-codex-spark',
-        'gpt-5.2',
-        'gpt-image-1',
-        'gpt-image-1.5',
-        'gpt-image-2',
-      ].map((name) => ({ id: name, name })),
-    },
-    {
-      id: 'anthropic',
-      name: 'Anthropic',
-      models: [
-        'claude-opus-4-7',
-        'claude-opus-4-6',
-        'claude-sonnet-4-6',
-        'claude-haiku-4-5-20251001',
-      ].map((name) => ({ id: name, name })),
-    },
-  ]
-}
 
 export function normalizeCatalog(catalog: CatalogResponse | null | undefined): CatalogResponse {
   const methods = Array.isArray(catalog?.methods) && catalog.methods.length

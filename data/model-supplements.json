@@ -1,0 +1,983 @@
+{
+  "fallback_prices": {
+    "grok-3-mini": {
+      "litellm_provider": "xai",
+      "input_cost_per_token": 3e-7,
+      "output_cost_per_token": 5e-7,
+      "cache_read_input_token_cost": 7.5e-8,
+      "source": "https://github.com/Wei-Shaw/sub2api/blob/5fc0e486c3f6a8a191b8bd140f39b60457f611cf/backend/internal/service/billing_service.go#L972"
+    },
+    "grok-3-mini-fast": {
+      "litellm_provider": "xai",
+      "input_cost_per_token": 6e-7,
+      "output_cost_per_token": 0.000004,
+      "cache_read_input_token_cost": 1.5e-7,
+      "source": "https://github.com/Wei-Shaw/sub2api/blob/5fc0e486c3f6a8a191b8bd140f39b60457f611cf/backend/internal/service/billing_service.go#L978"
+    },
+    "grok-4.20": {
+      "litellm_provider": "xai",
+      "input_cost_per_token": 0.00000125,
+      "output_cost_per_token": 0.0000025,
+      "cache_read_input_token_cost": 2e-7,
+      "input_cost_per_token_above_200k_tokens": 0.0000025,
+      "output_cost_per_token_above_200k_tokens": 0.000005,
+      "cache_read_input_token_cost_above_200k_tokens": 4e-7,
+      "source": "https://github.com/Wei-Shaw/sub2api/blob/5fc0e486c3f6a8a191b8bd140f39b60457f611cf/backend/internal/service/billing_service.go#L959"
+    },
+    "kimi-k2": {
+      "litellm_provider": "moonshot",
+      "input_cost_per_token": 5.6e-7,
+      "output_cost_per_token": 0.00000224,
+      "cache_read_input_token_cost": 1.4e-7,
+      "source": "https://github.com/Wei-Shaw/sub2api/blob/5fc0e486c3f6a8a191b8bd140f39b60457f611cf/backend/internal/service/billing_service.go#L847"
+    },
+    "kimi-k2-thinking": {
+      "litellm_provider": "moonshot",
+      "input_cost_per_token": 5.6e-7,
+      "output_cost_per_token": 0.00000224,
+      "cache_read_input_token_cost": 1.4e-7,
+      "source": "https://github.com/Wei-Shaw/sub2api/blob/5fc0e486c3f6a8a191b8bd140f39b60457f611cf/backend/internal/service/billing_service.go#L841"
+    },
+    "kimi-for-coding": {
+      "litellm_provider": "moonshot",
+      "input_cost_per_token": 9.5e-7,
+      "output_cost_per_token": 0.000004,
+      "cache_read_input_token_cost": 1.5e-7,
+      "source": "https://github.com/Wei-Shaw/sub2api/blob/5fc0e486c3f6a8a191b8bd140f39b60457f611cf/backend/internal/service/billing_service.go#L829"
+    }
+  },
+  "models": {
+    "typesafe": [
+      "jev-latest"
+    ],
+    "zhipu": [
+      "glm-5.3-flash",
+      "glm-5.3-flashx",
+      "glm-5.3",
+      "glm-5.2",
+      "glm-5.1",
+      "glm-5",
+      "glm-4.7",
+      "glm-4.7-flashx",
+      "glm-4.6",
+      "glm-4.5",
+      "glm-4.5-x",
+      "glm-4.5-air",
+      "glm-4.5-airx",
+      "glm-4-32b-0414-128k",
+      "glm-4.7-flash",
+      "glm-4.5-flash",
+      "glm-4.6v",
+      "glm-ocr",
+      "glm-4.6v-flashx",
+      "glm-4.5v",
+      "glm-4.6v-flash",
+      "glm-image",
+      "cogview-4",
+      "cogvideox-3",
+      "glm-5-turbo"
+    ],
+    "minimax": [
+      "minimax-m3",
+      "minimax-m2.7",
+      "minimax-m2.7-highspeed",
+      "minimax-m2.5",
+      "minimax-m2.5-highspeed",
+      "minimax-m2.1",
+      "minimax-m2.1-highspeed",
+      "minimax-m2"
+    ],
+    "kimi": [
+      "kimi-k3",
+      "kimi-k2.7-code",
+      "kimi-k2.7-code-highspeed",
+      "kimi-k2.6",
+      "kimi-for-coding",
+      "kimi-k2.5",
+      "kimi-k2-thinking",
+      "kimi-k2"
+    ],
+    "deepseek": [
+      "deepseek-flash",
+      "deepseek-v4-flash",
+      "deepseek-v4-flash-vision-exp",
+      "deepseek-v4-pro"
+    ],
+    "openai": [
+      "gpt-5.6-sol",
+      "gpt-6",
+      "gpt-5.6",
+      "gpt-5.6-terra",
+      "gpt-5.6-luna",
+      "gpt-6.1-sol",
+      "gpt-6-sol",
+      "gpt-6-luna",
+      "gpt-6-astra",
+      "gpt-5.5",
+      "gpt-5.4",
+      "gpt-5.4-mini",
+      "gpt-5.3-codex-spark",
+      "codex-auto-review",
+      "gpt-5.2",
+      "gpt-image-1",
+      "gpt-image-1.5",
+      "gpt-image-2",
+      "gpt-image-2.5-flare",
+      "gpt-image-2.5-sunburst"
+    ],
+    "anthropic": [
+      "claude-fable-5-1",
+      "claude-fable-5",
+      "claude-opus-4-5-20251101",
+      "claude-opus-4-6",
+      "claude-opus-4-7",
+      "claude-opus-4-8",
+      "claude-opus-5-5",
+      "claude-opus-5",
+      "claude-sonnet-5-5",
+      "claude-sonnet-5",
+      "claude-sonnet-4-6",
+      "claude-sonnet-4-5-20250929",
+      "claude-haiku-4-5-20251001"
+    ],
+    "antigravity": [
+      "claude-fable-5-1",
+      "claude-fable-5",
+      "claude-opus-4-5-thinking",
+      "claude-sonnet-4-5",
+      "claude-sonnet-4-5-thinking",
+      "claude-opus-4-6",
+      "claude-opus-4-6-thinking",
+      "claude-opus-4-7",
+      "claude-opus-4-8",
+      "claude-sonnet-4-6",
+      "gemini-2.5-flash",
+      "gemini-2.5-flash-image",
+      "gemini-2.5-flash-image-preview",
+      "gemini-2.5-flash-lite",
+      "gemini-2.5-flash-thinking",
+      "gemini-3-flash",
+      "gemini-3-pro-low",
+      "gemini-3-pro-high",
+      "gemini-3.1-pro-low",
+      "gemini-3.1-pro-high",
+      "gemini-3.1-flash-image",
+      "gemini-3.1-flash-image-preview",
+      "gemini-3.6-flash",
+      "gemini-3.6-flash-high",
+      "gemini-3.6-flash-low",
+      "gemini-3.6-flash-medium",
+      "gemini-3.6-flash-tiered",
+      "gemini-3.7-flash",
+      "gemini-3.7-flash-high",
+      "gemini-3.7-flash-low",
+      "gemini-3.7-flash-medium",
+      "gemini-3.7-flash-tiered",
+      "gemini-3.8-flash",
+      "gemini-3.8-flash-high",
+      "gemini-3.8-flash-low",
+      "gemini-3.8-flash-medium",
+      "gemini-3.8-flash-tiered",
+      "gemini-3-pro-preview",
+      "gemini-3-pro-image"
+    ],
+    "grok": [
+      "grok-4.5",
+      "grok-4.6",
+      "grok-4.7",
+      "grok-4.3",
+      "grok-4.20",
+      "grok-3-mini",
+      "grok-3-mini-fast",
+      "grok-build-0.1"
+    ],
+    "opencode_go": [
+      "grok-4.7",
+      "grok-4.6",
+      "gpt-5.6-luna",
+      "glm-5.3-flash",
+      "glm-5.3",
+      "glm-5.2",
+      "glm-5.1",
+      "kimi-k3",
+      "kimi-k2.7-code",
+      "kimi-k2.6",
+      "longcat-2.0",
+      "deepseek-v4-pro",
+      "deepseek-v4-flash",
+      "deepseek-v4-flash-vision-exp",
+      "mimo-v2.5",
+      "mimo-v2.5-pro",
+      "minimax-m3",
+      "minimax-m2.7",
+      "minimax-m2.5",
+      "muse-spark-1.3-contributor",
+      "muse-spark-1.2-contributor",
+      "qwen3.8-max",
+      "qwen3.8-flash",
+      "qwen3.7-max",
+      "qwen3.7-plus",
+      "qwen3.6-plus",
+      "hy4-preview",
+      "hy3",
+      "omen-alpha"
+    ]
+  },
+  "aliases": {
+    "openai": {
+      "gpt-6": "gpt-6-astra",
+      "gpt-5.6": "gpt-5.6-sol"
+    },
+    "antigravity": {
+      "gemini-2.5-flash-image-preview": "gemini-2.5-flash-image",
+      "gemini-2.5-flash-thinking": "gemini-2.5-flash",
+      "gemini-3-flash": "gemini-3-flash-preview",
+      "gemini-3-pro-low": "gemini-3-pro-preview",
+      "gemini-3-pro-high": "gemini-3-pro-preview",
+      "gemini-3.1-pro-low": "gemini-3.1-pro-preview",
+      "gemini-3.1-pro-high": "gemini-3.1-pro-preview",
+      "gemini-3.6-flash-high": "gemini-3.6-flash",
+      "gemini-3.6-flash-low": "gemini-3.6-flash",
+      "gemini-3.6-flash-medium": "gemini-3.6-flash",
+      "gemini-3.6-flash-tiered": "gemini-3.6-flash",
+      "gemini-3.7-flash-high": "gemini-3.7-flash",
+      "gemini-3.7-flash-low": "gemini-3.7-flash",
+      "gemini-3.7-flash-medium": "gemini-3.7-flash",
+      "gemini-3.7-flash-tiered": "gemini-3.7-flash",
+      "gemini-3.8-flash-high": "gemini-3.8-flash",
+      "gemini-3.8-flash-low": "gemini-3.8-flash",
+      "gemini-3.8-flash-medium": "gemini-3.8-flash",
+      "gemini-3.8-flash-tiered": "gemini-3.8-flash"
+    }
+  },
+  "overrides": {
+    "zhipu": {
+      "glm-5.3-flash": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.15,
+          "output_price": 0.5,
+          "cache_read_price": 0.03,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-5.3-flashx": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.37,
+          "output_price": 1.25,
+          "cache_read_price": 0.075,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-5.3": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 1.4,
+          "output_price": 4.4,
+          "cache_read_price": 0.26,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-5.2": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 1.4,
+          "output_price": 4.4,
+          "cache_read_price": 0.26,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-5.1": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 1.4,
+          "output_price": 4.4,
+          "cache_read_price": 0.26,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-5": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 1,
+          "output_price": 3.2,
+          "cache_read_price": 0.2,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.7": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.6,
+          "output_price": 2.2,
+          "cache_read_price": 0.11,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.7-flashx": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.07,
+          "output_price": 0.4,
+          "cache_read_price": 0.01,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.6": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.6,
+          "output_price": 2.2,
+          "cache_read_price": 0.11,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.5": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.6,
+          "output_price": 2.2,
+          "cache_read_price": 0.11,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.5-x": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 2.2,
+          "output_price": 8.9,
+          "cache_read_price": 0.45,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.5-air": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.2,
+          "output_price": 1.1,
+          "cache_read_price": 0.03,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.5-airx": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 1.1,
+          "output_price": 4.5,
+          "cache_read_price": 0.22,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4-32b-0414-128k": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.1,
+          "output_price": 0.1,
+          "cache_read_price": null,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.7-flash": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0,
+          "output_price": 0,
+          "cache_read_price": 0,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.5-flash": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0,
+          "output_price": 0,
+          "cache_read_price": 0,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.6v": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.3,
+          "output_price": 0.9,
+          "cache_read_price": 0.05,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-ocr": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.03,
+          "output_price": 0.03,
+          "cache_read_price": null,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.6v-flashx": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.04,
+          "output_price": 0.4,
+          "cache_read_price": 0.004,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.5v": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.6,
+          "output_price": 1.8,
+          "cache_read_price": 0.11,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-4.6v-flash": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0,
+          "output_price": 0,
+          "cache_read_price": 0,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "glm-image": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": null,
+          "output_price": null
+        },
+        "groups": [
+          {
+            "label": "",
+            "unit": "USD / 张",
+            "rows": [
+              {
+                "key": "output",
+                "label": "输出",
+                "price": 0.015
+              }
+            ]
+          }
+        ]
+      },
+      "cogview-4": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": null,
+          "output_price": null
+        },
+        "groups": [
+          {
+            "label": "",
+            "unit": "USD / 张",
+            "rows": [
+              {
+                "key": "output",
+                "label": "输出",
+                "price": 0.01
+              }
+            ]
+          }
+        ]
+      },
+      "cogvideox-3": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": null,
+          "output_price": null
+        },
+        "groups": [
+          {
+            "label": "",
+            "unit": "USD / 段",
+            "rows": [
+              {
+                "key": "output",
+                "label": "输出",
+                "price": 0.2
+              }
+            ]
+          }
+        ]
+      },
+      "glm-asr-2512": {
+        "source": "https://docs.z.ai/guides/overview/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": null,
+          "output_price": null
+        },
+        "groups": [
+          {
+            "label": "",
+            "unit": "USD / 1M tokens",
+            "rows": [
+              {
+                "key": "input",
+                "label": "音频输入",
+                "price": 0.03
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "minimax": {
+      "minimax-m3": {
+        "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.3,
+          "output_price": 1.2,
+          "cache_read_price": 0.06,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": [
+          {
+            "threshold": 512000,
+            "prices": {
+              "input_price": 0.6,
+              "output_price": 2.4,
+              "cache_read_price": 0.12,
+              "cache_write_price": null,
+              "cache_write_1h_price": null
+            }
+          }
+        ]
+      },
+      "minimax-m2.7": {
+        "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.3,
+          "output_price": 1.2,
+          "cache_read_price": 0.06,
+          "cache_write_price": 0.375,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "minimax-m2.7-highspeed": {
+        "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.6,
+          "output_price": 2.4,
+          "cache_read_price": 0.06,
+          "cache_write_price": 0.375,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "minimax-m2.5": {
+        "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.3,
+          "output_price": 1.2,
+          "cache_read_price": 0.03,
+          "cache_write_price": 0.375,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "minimax-m2.5-highspeed": {
+        "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.6,
+          "output_price": 2.4,
+          "cache_read_price": 0.03,
+          "cache_write_price": 0.375,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "minimax-m2.1": {
+        "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.3,
+          "output_price": 1.2,
+          "cache_read_price": 0.03,
+          "cache_write_price": 0.375,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "minimax-m2.1-highspeed": {
+        "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.6,
+          "output_price": 2.4,
+          "cache_read_price": 0.03,
+          "cache_write_price": 0.375,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "minimax-m2": {
+        "source": "https://platform.minimax.io/docs/guides/pricing-paygo",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.3,
+          "output_price": 1.2,
+          "cache_read_price": 0.03,
+          "cache_write_price": 0.375,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      }
+    },
+    "kimi": {
+      "kimi-k3": {
+        "source": "https://platform.kimi.ai/docs/pricing/chat-k3",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 3,
+          "output_price": 15,
+          "cache_read_price": 0.3,
+          "cache_write_price": 3,
+          "cache_write_1h_price": 6
+        },
+        "tiers": []
+      },
+      "kimi-k2.7-code": {
+        "source": "https://platform.kimi.ai/docs/pricing/chat-k3",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.95,
+          "output_price": 4,
+          "cache_read_price": 0.19,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "kimi-k2.7-code-highspeed": {
+        "source": "https://platform.kimi.ai/docs/pricing/chat-k3",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 1.9,
+          "output_price": 8,
+          "cache_read_price": 0.38,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      },
+      "kimi-k2.6": {
+        "source": "https://platform.kimi.ai/docs/pricing/chat-k3",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "input_price": 0.95,
+          "output_price": 4,
+          "cache_read_price": 0.16,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "tiers": []
+      }
+    },
+    "deepseek": {
+      "deepseek-flash": {
+        "source": "https://api-docs.deepseek.com/quick_start/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "cache_read_price": 0.003,
+          "input_price": 0.15,
+          "output_price": 0.6,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "groups": [
+          {
+            "label": "低峰",
+            "unit": "USD / 1M tokens",
+            "rows": [
+              {
+                "key": "input_price",
+                "label": "输入",
+                "price": 0.15
+              },
+              {
+                "key": "cache_read_price",
+                "label": "缓存读取",
+                "price": 0.003
+              },
+              {
+                "key": "output_price",
+                "label": "输出",
+                "price": 0.6
+              }
+            ]
+          },
+          {
+            "label": "高峰",
+            "unit": "USD / 1M tokens",
+            "rows": [
+              {
+                "key": "input_price",
+                "label": "输入",
+                "price": 0.3
+              },
+              {
+                "key": "cache_read_price",
+                "label": "缓存读取",
+                "price": 0.006
+              },
+              {
+                "key": "output_price",
+                "label": "输出",
+                "price": 1.2
+              }
+            ]
+          }
+        ]
+      },
+      "deepseek-v4-flash": {
+        "source": "https://api-docs.deepseek.com/quick_start/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "cache_read_price": 0.003,
+          "input_price": 0.15,
+          "output_price": 0.6,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "groups": [
+          {
+            "label": "低峰",
+            "unit": "USD / 1M tokens",
+            "rows": [
+              {
+                "key": "input_price",
+                "label": "输入",
+                "price": 0.15
+              },
+              {
+                "key": "cache_read_price",
+                "label": "缓存读取",
+                "price": 0.003
+              },
+              {
+                "key": "output_price",
+                "label": "输出",
+                "price": 0.6
+              }
+            ]
+          },
+          {
+            "label": "高峰",
+            "unit": "USD / 1M tokens",
+            "rows": [
+              {
+                "key": "input_price",
+                "label": "输入",
+                "price": 0.3
+              },
+              {
+                "key": "cache_read_price",
+                "label": "缓存读取",
+                "price": 0.006
+              },
+              {
+                "key": "output_price",
+                "label": "输出",
+                "price": 1.2
+              }
+            ]
+          }
+        ]
+      },
+      "deepseek-v4-flash-vision-exp": {
+        "source": "https://api-docs.deepseek.com/quick_start/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "cache_read_price": 0.003,
+          "input_price": 0.15,
+          "output_price": 0.6,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "groups": [
+          {
+            "label": "低峰",
+            "unit": "USD / 1M tokens",
+            "rows": [
+              {
+                "key": "input_price",
+                "label": "输入",
+                "price": 0.15
+              },
+              {
+                "key": "cache_read_price",
+                "label": "缓存读取",
+                "price": 0.003
+              },
+              {
+                "key": "output_price",
+                "label": "输出",
+                "price": 0.6
+              }
+            ]
+          },
+          {
+            "label": "高峰",
+            "unit": "USD / 1M tokens",
+            "rows": [
+              {
+                "key": "input_price",
+                "label": "输入",
+                "price": 0.3
+              },
+              {
+                "key": "cache_read_price",
+                "label": "缓存读取",
+                "price": 0.006
+              },
+              {
+                "key": "output_price",
+                "label": "输出",
+                "price": 1.2
+              }
+            ]
+          }
+        ]
+      },
+      "deepseek-v4-pro": {
+        "source": "https://api-docs.deepseek.com/quick_start/pricing",
+        "verified_at": "2026-10-09",
+        "prices": {
+          "cache_read_price": 0.022,
+          "input_price": 0.66,
+          "output_price": 1.98,
+          "cache_write_price": null,
+          "cache_write_1h_price": null
+        },
+        "groups": [
+          {
+            "label": "低峰",
+            "unit": "USD / 1M tokens",
+            "rows": [
+              {
+                "key": "input_price",
+                "label": "输入",
+                "price": 0.66
+              },
+              {
+                "key": "cache_read_price",
+                "label": "缓存读取",
+                "price": 0.022
+              },
+              {
+                "key": "output_price",
+                "label": "输出",
+                "price": 1.98
+              }
+            ]
+          },
+          {
+            "label": "高峰",
+            "unit": "USD / 1M tokens",
+            "rows": [
+              {
+                "key": "input_price",
+                "label": "输入",
+                "price": 1.32
+              },
+              {
+                "key": "cache_read_price",
+                "label": "缓存读取",
+                "price": 0.044
+              },
+              {
+                "key": "output_price",
+                "label": "输出",
+                "price": 3.96
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "typesafe": {
+      "jev-latest": {
+        "source": "https://github.com/Wei-Shaw/sub2api/blob/5fc0e486c3f6a8a191b8bd140f39b60457f611cf/backend/internal/service/billing_service.go#L704",
+        "prices": {
+          "input_price": 0.042,
+          "output_price": 0
+        }
+      }
+    }
+  }
+}
