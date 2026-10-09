@@ -6,8 +6,8 @@ export function formatModelPrice(value: number | null | undefined): string {
 }
 
 export function modelPriceGroups(model: ModelPricingItem): ModelPriceGroup[] {
-  const primaryGroups = model.price_groups?.filter((group) => group.label.trim() !== '其他计价项')
-  if (primaryGroups?.length) return primaryGroups.map((group) => ({ ...group, rows: orderPriceRows(group.rows) }))
+  const baseGroup = model.price_groups?.find((group) => group.label.trim() !== '其他计价项')
+  if (baseGroup) return [{ ...baseGroup, label: '', rows: orderPriceRows(baseGroup.rows) }]
   const rows = [
     { key: 'input', label: '输入', price: model.input_price ?? null },
     { key: 'output', label: '输出', price: model.output_price ?? null },

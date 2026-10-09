@@ -33,11 +33,32 @@ test('supplementary pricing groups are never displayed, including from cached ca
   const primary = { label: '输入 > 200K', unit: 'USD / 1M tokens', rows: [{ key: 'input_price', label: '输入', price: 2 }, { key: 'output_price', label: '输出', price: 10 }] }
   const extra = { label: '其他计价项', unit: 'USD / 分钟', rows: [{ key: 'input_cost_per_second', label: '音频输入', price: .01 }] }
   const model = { id: 'test', name: 'test', price_groups: [primary, extra] }
-  assert.deepEqual(modelPriceGroups(model), [primary])
+  assert.deepEqual(modelPriceGroups(model), [{ ...primary, label: '' }])
   assert.equal(model.price_groups.length, 2)
   assert.deepEqual(modelPriceGroups({ ...model, price_groups: [extra] })[0].rows.map((row) => row.price), [null, null])
   for (const platform of fallbackCatalog.models) for (const model of platform.models) {
     assert.ok(modelPriceGroups(model).every((group) => group.label !== '其他计价项'))
+  }
+})
+
+test('only base prices are displayed without tier labels, leaving catalog data unchanged', () => {
+  const base = { label: '输入 ≤ 200K', unit: 'USD / 1M tokens', rows: [{ key: 'input_price', label: '输入', price: 2 }, { key: 'output_price', label: '输出', price: 12 }] }
+  const tier = { ...base, label: '输入 > 200K', rows: [{ key: 'input_price', label: '输入', price: 4 }, { key: 'output_price', label: '输出', price: 18 }] }
+  const extra = { label: '其他计价项', unit: 'USD / 图片', rows: [{ key: 'image', label: '图片', price: .12 }] }
+  const model = { id: 'test', name: 'test', price_groups: [extra, base, tier] }
+  const original = structuredClone(model)
+  assert.deepEqual(modelPriceGroups(model), [{ ...base, label: '' }])
+  assert.deepEqual(model, original)
+
+  for (const platform of fallbackCatalog.models) for (const model of platform.models) {
+    const groups = modelPriceGroups(model)
+    const baseGroup = model.price_groups?.find((group) => group.label.trim() !== '其他计价项')
+    assert.equal(groups.length, 1, model.name)
+    assert.equal(groups[0].label, '', model.name)
+    if (baseGroup) {
+      assert.equal(groups[0].unit, baseGroup.unit, model.name)
+      assert.deepEqual([...groups[0].rows].sort((a, b) => a.key.localeCompare(b.key)), [...baseGroup.rows].sort((a, b) => a.key.localeCompare(b.key)), model.name)
+    }
   }
 })
 

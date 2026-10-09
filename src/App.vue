@@ -67,9 +67,18 @@
       </section>
 
       <section id="models" class="model-catalog-section">
-        <div class="section-head animate-enter">
-          <h2>模型价格</h2>
-          <p>公开参考价格 · USD / 1M tokens · 图片、音频与视频按对应单位计价</p>
+        <div class="model-catalog-heading animate-enter">
+          <div class="model-catalog-title">
+            <div class="model-title-line">
+              <h2>模型价格</h2>
+              <span>{{ availableModelPlatforms.length }} 个平台</span>
+            </div>
+            <p>官方参考价 · USD</p>
+          </div>
+          <div class="model-search-wrap">
+            <Search :size="18" aria-hidden="true" />
+            <input v-model="modelQuery" class="model-search" type="search" placeholder="搜索模型" aria-label="搜索模型" />
+          </div>
         </div>
         <div class="model-catalog-toolbar">
           <div class="model-platform-tabs" role="group" aria-label="模型平台">
@@ -78,10 +87,6 @@
             <button v-for="platform in availableModelPlatforms" :key="platform.id" type="button"
               :aria-pressed="selectedModelPlatform === platform.id" :class="{ active: selectedModelPlatform === platform.id }"
               @click="selectedModelPlatform = platform.id">{{ platform.name }}</button>
-          </div>
-          <div class="model-search-wrap">
-            <Search :size="16" aria-hidden="true" />
-            <input v-model="modelQuery" class="model-search" type="search" placeholder="搜索模型" aria-label="搜索模型" />
           </div>
         </div>
         <div class="model-platforms">
@@ -100,7 +105,7 @@
                 </header>
                 <div class="model-card-pricing">
                   <div v-for="(priceGroup, index) in modelPriceGroups(model)" :key="index" class="model-price-group">
-                    <div class="model-price-unit"><span v-if="priceGroup.label" class="model-price-tier">{{ priceGroup.label }}</span><span>{{ priceGroup.unit }}</span></div>
+                    <div class="model-price-unit">{{ priceGroup.unit }}</div>
                     <div class="model-prices">
                       <div v-for="row in priceGroup.rows" :key="row.key" :class="{ 'cache-price': row.key.startsWith('cache') }">
                         <span>{{ row.label }}</span><b>{{ formatModelPrice(row.price) }}</b>
@@ -1578,8 +1583,45 @@ onBeforeUnmount(() => {
   scroll-margin-top: 84px;
 }
 
-.model-catalog-section .section-head {
-  margin-bottom: 34px;
+.model-catalog-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.model-catalog-title {
+  min-width: 0;
+}
+
+.model-title-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.model-title-line h2 {
+  margin: 0;
+  color: #202a26;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: 0;
+}
+
+.model-title-line > span {
+  color: #77817c;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.model-catalog-title p {
+  margin: 6px 0 0;
+  color: #77817c;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .model-platforms {
@@ -1592,42 +1634,49 @@ onBeforeUnmount(() => {
 }
 
 .model-catalog-toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
+  padding-bottom: 24px;
   margin-bottom: 32px;
+  border-bottom: 1px solid #e4e9e6;
 }
 
 .model-platform-tabs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  flex: 1 1 640px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
 }
 
 .model-platform-tabs button {
-  min-height: 38px;
-  padding: 6px 0;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  background: transparent;
-  color: #657078;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: #f2f5f3;
+  color: #5d6862;
   font: inherit;
   font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  letter-spacing: 0;
   cursor: pointer;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.model-platform-tabs button:hover,
+.model-platform-tabs button:hover {
+  background: #e9eeeb;
+  color: #202a26;
+}
+
 .model-platform-tabs button.active {
-  color: #0b7664;
-  border-bottom-color: #0b7664;
+  background: #e8f3ee;
+  border-color: #9dbfb1;
+  color: #196448;
 }
 
 .model-search-wrap {
   display: flex;
   align-items: center;
-  flex: 1 1 200px;
+  flex: 0 1 320px;
   min-width: 0;
   max-width: 320px;
   position: relative;
@@ -1635,7 +1684,7 @@ onBeforeUnmount(() => {
 
 .model-search-wrap > svg {
   position: absolute;
-  left: 12px;
+  left: 14px;
   color: #79858a;
   pointer-events: none;
 }
@@ -1643,17 +1692,22 @@ onBeforeUnmount(() => {
 .model-search {
   width: 100%;
   min-width: 0;
-  height: 42px;
-  padding: 0 12px 0 36px;
-  border: 1px solid #d4dce0;
+  height: 44px;
+  padding: 0 14px 0 42px;
+  border: 1px solid #dfe6e4;
   border-radius: 6px;
   background: #fff;
   color: #20282b;
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
 }
 
-.model-search:focus-visible {
+.model-search::placeholder {
+  color: #8b948f;
+}
+
+.model-search:focus-visible,
+.model-platform-tabs button:focus-visible {
   outline: 2px solid #0b7664;
   outline-offset: 2px;
 }
@@ -1759,26 +1813,11 @@ onBeforeUnmount(() => {
   letter-spacing: 0;
 }
 
-.model-price-group + .model-price-group {
-  margin-top: 18px;
-  padding-top: 16px;
-  border-top: 1px solid #edf1ef;
-}
-
 .model-price-unit {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 4px 12px;
   margin-bottom: 12px;
   color: #77817c;
   font-size: 11px;
   line-height: 1.5;
-}
-
-.model-price-tier {
-  color: #257460;
-  font-weight: 600;
 }
 
 .model-prices {
@@ -3624,6 +3663,10 @@ onBeforeUnmount(() => {
   .model-price-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .model-platform-tabs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -3675,12 +3718,36 @@ onBeforeUnmount(() => {
     padding: 0;
   }
 
+  .model-catalog-heading {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  .model-title-line h2 {
+    font-size: 24px;
+  }
+
   .model-search-wrap {
+    flex-basis: auto;
     max-width: none;
   }
 
   .model-catalog-toolbar {
-    gap: 12px;
+    padding-bottom: 20px;
+    margin-bottom: 24px;
+  }
+
+  .model-platform-tabs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .model-platform-tabs button {
+    min-height: 48px;
+    padding: 6px;
+    font-size: 12px;
   }
 
   .model-price-grid {
